@@ -1,4 +1,5 @@
 # spatemR
 An R package for autoregresive spatial models with autoregresive temporal trend and GAMLSS
 
-\code{devtools::install_github("Cruzalirio/spatemR")}
+Use `devtools::install_github("Cruzalirio/spatemR")` to install the latest version
+of the package
