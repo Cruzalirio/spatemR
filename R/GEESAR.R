@@ -1,5 +1,68 @@
-GEESAR <- function (formula, family = gaussian(), weights, data, W,
-                    corr, start = NULL, 
+#' Generalized Estimating Equations with Spatial Autoregressive Components
+#'
+#' @description
+#' `GEESAR` estimates generalized estimating equations (GEE) incorporating spatial autoregressive (SAR) components.  
+#' It extends GEE models to account for spatial dependence in the response variable.
+#'
+#' @param formula A formula specifying the model structure (response ~ predictors).
+#' @param family A description of the error distribution and link function. Default is `gaussian()`.
+#' @param weights Optional vector of prior weights. Must be positive.
+#' @param data A data frame containing the variables in the model.
+#' @param W A spatial weights matrix defining the spatial dependence structure.
+#' @param corr Unused parameter (reserved for future correlation structures).
+#' @param start Optional starting values for parameter estimation.
+#' @param toler Convergence tolerance for iterative optimization. Default is `1e-05`.
+#' @param maxit Maximum number of iterations for model fitting. Default is `50`.
+#' @param trace Logical; if `TRUE`, prints iteration details. Default is `FALSE`.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @details
+#' The function estimates a spatially autoregressive GEE model by iteratively updating the spatial dependence 
+#' parameter (`rho`) and regression coefficients (`beta`). The estimation follows a quasi-likelihood approach 
+#' using iterative weighted least squares (IWLS).  
+#'
+#' The function supports common GLM families (`gaussian`, `binomial`, `poisson`, `Gamma`, `inverse.gaussian`) and 
+#' their quasi-likelihood equivalents.
+#'
+#' @return A list of class `"glmgee"` containing:
+#' \item{coefficients}{Estimated regression coefficients.}
+#' \item{rho}{Estimated spatial autoregressive parameter.}
+#' \item{fitted.values}{Predicted values from the model.}
+#' \item{linear.predictors}{Linear predictor values (`X * beta`).}
+#' \item{prior.weights}{Weights used in estimation.}
+#' \item{y}{Observed response values.}
+#' \item{formula}{Model formula.}
+#' \item{call}{Function call used to fit the model.}
+#' \item{data}{Data used in the model.}
+#' \item{converged}{Logical indicating whether the algorithm converged.}
+#' \item{logLik}{Quasi-log-likelihood of the fitted model.}
+#' \item{deviance}{Residual deviance.}
+#' \item{df.residual}{Residual degrees of freedom.}
+#' \item{phi}{Dispersion parameter estimate.}
+#' \item{CIC}{Corrected Information Criterion.}
+#' \item{RJC}{Robust Jackknife Correction.}
+#'
+#' @seealso
+#' \code{\link{glm}}, \code{\link{gee}}, \code{\link{spdep}}
+#'
+#' @references
+#' Source: [Focus to learn more](https://doi.org/10.48550/arXiv.2412.00945)
+#'
+#' @examples
+#' \dontrun{
+#' library(spdep)
+#' library(sp)
+#' data(meuse)
+#' coordinates(meuse) <- ~x+y
+#' W <- nb2mat(knn2nb(knearneigh(meuse, k=5)), style="W")
+#' fit <- GEESAR(cadmium ~ dist + elev, family=poisson(), data=meuse, W=W)
+#' summary(fit)
+#' }
+#'
+#' @export
+
+GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
+                    start = NULL, 
           toler = 1e-05, maxit = 50, trace = FALSE, ...) {
   mf <- model.frame(formula, data=data)
   y <- as.matrix(model.response(mf))
@@ -148,14 +211,15 @@ GEESAR <- function (formula, family = gaussian(), weights, data, W,
   }
   
   rho_f <- optim(par=rho,qllp, beta=beta_new, W=W, D=datas, n=n,
-                 method="L-BFGS-B", lower=-0.99,upper=0.99)
+                 method="L-BFGS-B", lower=-0.99,upper=0.99, hessian = TRUE)
   rho_new <- rho_f$par
+  varrho <- -rho_f$hessian[1,1]
   tolrho <- abs(rho_new-rho)
   niterrho <- niterrho + 1
   Result = c(Result, rho_new)
   }
   
-  #plot(Result, type="l")
+  ##print(rho_f)
   
   rho <- rho_new
   A = diag(n) - rho*W
@@ -185,8 +249,8 @@ GEESAR <- function (formula, family = gaussian(), weights, data, W,
   estfun <- as.matrix(resume2[, 1])
   rownames(estfun) <- colnames(X)
   colnames(estfun) <- ""
-  out_ <- list(coefficients = beta_new, rho=rho,  fitted.values = mu, 
-               linear.predictors = eta,  arrangedata = datas, 
+  out_ <- list(coefficients = beta_new, rho=rho, varrho=-1/varrho ,fitted.values = mu, 
+               linear.predictors = eta,  arrangedata = datas, vcovs=vcovs,
                prior.weights = weights, y = y, formula = formula, call = match.call(), 
                offset = offs, model = mf, data = data, 
                score = score, converged = ifelse(niter < maxit, TRUE, FALSE), estfun = estfun, 
@@ -194,7 +258,7 @@ GEESAR <- function (formula, family = gaussian(), weights, data, W,
                logLik = logLik, deviance = sum(family$dev.resids(y, mu, weights)), df.residual = length(y) - length(beta_new), 
                levels = .getXlevels(attr(mf, "terms"), mf),
                contrasts = attr(X, "contrasts"), start = start, iter = niter, linear = TRUE)
-  class(out_) <- "glmgee"
+  class(out_) <- "gsar"
   return(out_)
 }
 
