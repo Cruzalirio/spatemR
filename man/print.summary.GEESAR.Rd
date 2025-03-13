@@ -7,16 +7,10 @@
 \method{print}{summary.GEESAR}(x, ...)
 }
 \arguments{
-\item{x}{An object of class `"summary.GEESAR"`, typically generated 
-by the `summary.GEESAR()` function.}
+\item{x}{An object of class `"summary.GEESAR"`.}
 
 \item{...}{Additional arguments (currently unused).}
 }
-\value{
-Prints the summary information to the console.
-}
 \description{
-Custom print method for displaying the summary of GEESAR model objects. 
-It prints detailed results, including coefficients, rho estimates, 
-model diagnostics, and other statistics in a formatted manner.
+Prints a formatted summary of a GEESAR model.
 }

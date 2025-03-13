@@ -258,7 +258,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
                logLik = logLik, deviance = sum(family$dev.resids(y, mu, weights)), df.residual = length(y) - length(beta_new), 
                levels = .getXlevels(attr(mf, "terms"), mf),
                contrasts = attr(X, "contrasts"), start = start, iter = niter, linear = TRUE)
-  class(out_) <- "gsar"
+  class(out_) <- "GEESAR"
   return(out_)
 }
 
