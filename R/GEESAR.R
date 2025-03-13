@@ -56,7 +56,7 @@
 #' coordinates(meuse) <- ~x+y
 #' W <- nb2mat(knn2nb(knearneigh(meuse, k=5)), style="W")
 #' fit <- GEESAR(cadmium ~ dist + elev, family=poisson(), data=meuse, W=W)
-#' summary(fit)
+#' summary.GEESAR(fit)
 #' }
 #'
 #' @export
