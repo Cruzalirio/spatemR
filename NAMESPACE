@@ -3,3 +3,6 @@
 S3method(print,summary.GEESAR)
 S3method(summary,GEESAR)
 export(GEESAR)
+export(SARARgamlss)
+import(gamlss)
+import(splines)

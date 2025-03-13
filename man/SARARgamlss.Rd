@@ -2,7 +2,7 @@
 % Please edit documentation in R/SARARgamlss.R
 \name{SARARgamlss}
 \alias{SARARgamlss}
-\title{Spatial autoregresive models with joint modelling of mean and variance}
+\title{SARARgamlss: Spatial Autoregressive Generalized Additive Model for Location Scale (GAMLSS)}
 \usage{
 SARARgamlss(
   formula = formula(data),
@@ -17,7 +17,36 @@ SARARgamlss(
   ...
 )
 }
+\arguments{
+\item{formula}{A formula specifying the mean structure of the model (response ~ explanatory variables).}
+
+\item{sigma.formula}{A formula specifying the variance structure of the model (default: ~1).}
+
+\item{W1}{A spatial weights matrix for the SAR term (default: identity matrix).}
+
+\item{W2}{A spatial weights matrix for the SARAR term (default: identity matrix).}
+
+\item{data}{A data.frame containing the variables used in the model.}
+
+\item{tol}{Convergence tolerance (default: 1E-4).}
+
+\item{maxiter}{Maximum number of iterations for optimization (default: 20).}
+
+\item{type}{The type of spatial model to fit: one of "SAR", "SARAR", or "SEM".}
+
+\item{weights}{Optional weights for the observations (default: NULL).}
+
+\item{...}{Additional arguments passed to `gamlss`.}
+}
+\value{
+A fitted GAMLSS model object with spatial autoregressive terms. The model object also includes
+the variance of the spatial parameters \(\hat{\rho}\) and \(\hat{\lambda}\).
+}
 \description{
-Function to calculate a SARAR, SEM or SAR model with explicit model using 
-GAMLSS
+This function estimates a Spatial Autoregressive Generalized Additive Model for Location Scale 
+(SARARgamlss) using GAMLSS. The model includes both spatial dependencies and the possibility of 
+non-parametric terms in the formulas for the mean and variance. The function supports SAR, SARAR, 
+and SEM model types and performs the estimation through an iterative process that updates spatial 
+dependence parameters. The variance of the spatial parameters \(\hat{\rho}\) and \(\hat{\lambda}\) 
+is estimated using the inverse of the Hessian matrix from the optimization.
 }
