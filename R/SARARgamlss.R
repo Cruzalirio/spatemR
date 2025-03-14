@@ -123,8 +123,6 @@ SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
     
     Hessian <- p0$hessian  # Extract Hessian matrix
     p0 <- p0$par
-    
-    var_cov_matrix <- solve(Hessian)  # Inverse Hessian for variance-covariance
     tolTemp <- sum(abs(p1 - p0))
     iter <- iter + 1
   }
@@ -144,21 +142,24 @@ SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
     m0[[names]] <- m1[[names]]
   }
   
+  model.frame(m0, what="mu") <- 
   # Return the final model object with spatial parameters and variance estimates
   if (type == "SARAR") {
     spamu =c(p0[1],p0[2])
+    var_cov_matrix <- solve(Hessian)
     spacov = var_cov_matrix
   } else if (type == "SAR") {
     spamu =c(p0[1], NA)
+    var_cov_matrix <- matrix(c( solve(Hessian[1,1]),NA, NA,NA), ncol=2, nrow=2)
     spacov = var_cov_matrix
   } else {
     spamu =c(NA, p0[2])
+    var_cov_matrix <- matrix(c(NA, NA,NA, solve(Hessian[2,2])), ncol=2, nrow=2)
     spacov =var_cov_matrix 
   }
   out1 <- list("gamlss"=m0, 
-               "spatial"=list("spatial"=spamu, "sdspatial"=spacov, "type"=type),
-               "m1Temp"=m1)
-  class(out1) <- "SARARgamlss"
+               "spatial"=list("spatial"=spamu, "sdspatial"=spacov, "type"=type))
+  #class(out1) <- "SARARgamlss"
   return(out1)
 }
 

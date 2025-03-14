@@ -23,7 +23,7 @@
 summary_SAR <- function(object, ...) {
   
   # Verificar si el objeto es de clase 'SARARgamlss'
-  if (inherits(object, "SARARgamlss")) {
+  if (!is.null(object$gamlss)) {
     
     # Resumen del modelo GAMLSS dentro del objeto SARARgamlss
     sum_gamlss <- summary(object$gamlss, type="qr")
