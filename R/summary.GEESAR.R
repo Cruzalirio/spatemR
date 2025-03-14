@@ -53,7 +53,7 @@ summary_SAR <- function(object, ...) {
     pvalue <- pchisq(waldT, df = 2, lower.tail = FALSE)
     wald_test <- cbind(Wald = waldT, `Pr(>W)` = pvalue)
     colnames(wald_test) <- c("Wald value", "Pr(>w)")
-    rownames(wald_test) <- c("=c(0,0)")
+    rownames(wald_test) <- c("c(rho, lambda)=c(0,0)")
     
     # Crear lista de resultados
     summary_obj <- list(

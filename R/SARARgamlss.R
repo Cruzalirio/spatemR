@@ -31,7 +31,7 @@
 #' result <- SARARgamlss(formula = CRIME ~ INC + cs(HOVAL), 
 #' sigma.formula = ~ INC + pb(HOVAL), W1 = W1, W2 = W2,data = COL.OLD, 
 #' tol = 1E-4,  maxiter = 20, type = "SARAR")
-#' summary(result)
+#' summary_SAR(result)
 #' 
 #' @export
 #' @import gamlss splines
