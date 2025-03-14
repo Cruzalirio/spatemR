@@ -20,6 +20,19 @@
 #' 
 #' @return A fitted GAMLSS model object with spatial autoregressive terms. The model object also includes
 #' the variance of the spatial parameters \(\hat{\rho}\) and \(\hat{\lambda}\).
+#' 
+#' @examples
+#' library(spdep)
+#' data(oldcol)
+#' Create spatial weight matrices W1 and W2
+#' W1 <- spdep::nb2mat(COL.nb, style = "W")
+#' W2 <- W1  # In this case, assume the same spatial weights for both
+#' # Fit a SARARgamlss model
+#' result <- SARARgamlss(formula = CRIME ~ INC + cs(HOVAL), 
+#' sigma.formula = ~ INC + pb(HOVAL), W1 = W1, W2 = W2,data = COL.OLD, 
+#' tol = 1E-4,  maxiter = 20, type = "SARAR")
+#' summary(result)
+#' 
 #' @export
 #' @import gamlss splines
 SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
@@ -45,6 +58,7 @@ SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
     print("The SARAR Model contains W1=0 and W2=0, it is a usual non-spatial GAMLSS")
   }
   if (type == "SARAR" & sum(W2) == 0) {
+    W2 <- W1
     print("The SARAR Model assumes that W1 = W2")
   }
   
@@ -55,11 +69,9 @@ SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
   
   # Fit the initial GAMLSS model for mean (mu) and variance (sigma)
   m0 <- gamlss::gamlss(formula = formula, sigma.formula = sigma.formula, 
-                       data = data, family = NO(), ...)
+                       data = data, family = NO())
   
   Y <- matrix(m0$y, ncol = 1)
-  namesX <- colnames(model.matrix(m0, what = "mu"))
-  namesZ <- colnames(model.matrix(m0, what = "sigma"))
   
   # Initial variance estimation (sigma)
   var0 <- predict(m0, what = "sigma", type = "response")^2
@@ -93,9 +105,11 @@ SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
     BB <- diag(n) - p1[2] * W2
     Ytemp <- as.matrix(BB %*% AA %*% Y)
     Xtemp <- as.matrix(BB %*% model.matrix(m0, what = "mu"))
-    colnames(Xtemp) <- namesX
     Ztemp <- model.matrix(m0, what = "sigma")
-    colnames(Ztemp) <- namesZ
+    
+    colnames(Xtemp) <- colnames(model.matrix(m0, what = "mu"))
+    colnames(Ztemp) <- colnames(model.matrix(m0, what = "sigma"))
+    
     
     # Fit updated GAMLSS model with transformed data (dependent and independent)
     m1 <- gamlss::gamlss(Ytemp ~ Xtemp - 1, ~Ztemp - 1)
@@ -110,44 +124,41 @@ SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
     Hessian <- p0$hessian  # Extract Hessian matrix
     p0 <- p0$par
     
-    var_cov_matrix <- -solve(Hessian)  # Inverse Hessian for variance-covariance
-    
-    
-    
-    # Update variance-covariance matrix
-    var_rho <- var_cov_matrix[1, 1]
-    var_lambda <- var_cov_matrix[2, 2]
-    
-    model_variances <- list(var_rho = var_rho, var_lambda = var_lambda)
-    # Store variances in model object
-    model_variances$var_rho <- var_rho
-    model_variances$var_lambda <- var_lambda
-    
+    var_cov_matrix <- solve(Hessian)  # Inverse Hessian for variance-covariance
     tolTemp <- sum(abs(p1 - p0))
     iter <- iter + 1
   }
   
   # Store updated model parameters
-  namesTemp <- c("G.deviance", "residuals", "mu.fv", "mu.lp", "mu.wv", "mu.wt", 
-                 "mu.qr", "mu.coefficients", "sigma.fv", "sigma.wv", "sigma.wt", 
-                 "sigma.coefficients", "P.deviance", "aic", "sbc")
   
-  for (names in namesTemp) {
+  names_to_update <- c("G.deviance", "residuals", "mu.fv", "mu.lp", "mu.wv", 
+                       "mu.wt", "mu.qr", "mu.coefficients", "sigma.fv",
+                       "sigma.wv", "sigma.wt", "sigma.coefficients", "sigma.qr",
+                       "P.deviance", "aic", "sbc")
+  
+  for(valu in names_to_update){
+    names(m1[[valu]]) <- names(m0[[valu]])
+  }
+  
+  for (names in names_to_update) {
     m0[[names]] <- m1[[names]]
   }
   
   # Return the final model object with spatial parameters and variance estimates
   if (type == "SARAR") {
-    m0$rho <- p0[1]
-    m0$lambda <- p0[2]
+    spamu =c(p0[1],p0[2])
+    spacov = var_cov_matrix
   } else if (type == "SAR") {
-    m0$rho <- p0[1]
+    spamu =c(p0[1], NA)
+    spacov = var_cov_matrix
   } else {
-    m0$lambda <- p0[2]
+    spamu =c(NA, p0[2])
+    spacov =var_cov_matrix 
   }
-  
-  m0$variances <- model_variances  # Add variance estimates to the model
-  class(m0) <- "SARARgamlss"
-  return(m0)
+  out1 <- list("gamlss"=m0, 
+               "spatial"=list("spatial"=spamu, "sdspatial"=spacov, "type"=type),
+               "m1Temp"=m1)
+  class(out1) <- "SARARgamlss"
+  return(out1)
 }
 

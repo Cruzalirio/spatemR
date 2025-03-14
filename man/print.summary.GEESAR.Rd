@@ -2,15 +2,16 @@
 % Please edit documentation in R/summary.GEESAR.R
 \name{print.summary.GEESAR}
 \alias{print.summary.GEESAR}
-\title{Print Method for Summary of GEESAR Objects}
+\title{Print Method for Summary of GEESAR Models}
 \usage{
 \method{print}{summary.GEESAR}(x, ...)
 }
 \arguments{
-\item{x}{An object of class `"summary.GEESAR"`.}
+\item{x}{An object of class 'summary.GEESAR'.}
 
 \item{...}{Additional arguments (currently unused).}
 }
 \description{
-Prints a formatted summary of a GEESAR model.
+This method prints a formatted summary of a 'summary.GEESAR' object,
+including details of the model coefficients, rho, dispersion, and other statistics.
 }

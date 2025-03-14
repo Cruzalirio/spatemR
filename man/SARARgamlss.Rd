@@ -50,3 +50,16 @@ and SEM model types and performs the estimation through an iterative process tha
 dependence parameters. The variance of the spatial parameters \(\hat{\rho}\) and \(\hat{\lambda}\) 
 is estimated using the inverse of the Hessian matrix from the optimization.
 }
+\examples{
+library(spdep)
+data(oldcol)
+Create spatial weight matrices W1 and W2
+W1 <- spdep::nb2mat(COL.nb, style = "W")
+W2 <- W1  # In this case, assume the same spatial weights for both
+# Fit a SARARgamlss model
+result <- SARARgamlss(formula = CRIME ~ INC + cs(HOVAL), 
+sigma.formula = ~ INC + pb(HOVAL), W1 = W1, W2 = W2,data = COL.OLD, 
+tol = 1E-4,  maxiter = 20, type = "SARAR")
+summary(result)
+
+}
