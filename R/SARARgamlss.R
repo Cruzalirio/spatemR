@@ -31,6 +31,7 @@
 #' result <- SARARgamlss(formula = CRIME ~ INC + cs(HOVAL), 
 #' sigma.formula = ~ INC + pb(HOVAL), W1 = W1, W2 = W2,data = COL.OLD, 
 #' tol = 1E-4,  maxiter = 20, type = "SARAR")
+#' data = COL.OLD
 #' summary_SAR(result)
 #' 
 #' @export
@@ -142,7 +143,7 @@ SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
     m0[[names]] <- m1[[names]]
   }
   
-  model.frame(m0, what="mu") <- 
+  #model.frame(m0, what="mu") <- 
   # Return the final model object with spatial parameters and variance estimates
   if (type == "SARAR") {
     spamu =c(p0[1],p0[2])
@@ -158,7 +159,8 @@ SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
     spacov =var_cov_matrix 
   }
   out1 <- list("gamlss"=m0, 
-               "spatial"=list("spatial"=spamu, "sdspatial"=spacov, "type"=type))
+               "spatial"=list("spatial"=spamu, "sdspatial"=spacov, "type"=type),
+               "gamlssAY"=m1)
   #class(out1) <- "SARARgamlss"
   return(out1)
 }
