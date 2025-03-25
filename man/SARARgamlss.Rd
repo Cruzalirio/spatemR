@@ -60,6 +60,7 @@ W2 <- W1  # In this case, assume the same spatial weights for both
 result <- SARARgamlss(formula = CRIME ~ INC + cs(HOVAL), 
 sigma.formula = ~ INC + pb(HOVAL), W1 = W1, W2 = W2,data = COL.OLD, 
 tol = 1E-4,  maxiter = 20, type = "SARAR")
+data = COL.OLD
 summary_SAR(result)
 
 }

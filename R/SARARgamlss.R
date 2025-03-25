@@ -43,6 +43,7 @@ SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
                         weights = NULL, ...) {
   
   # Check for model type and handle accordingly
+  mf <- stats::model.frame(formula, data=data)
   if (type == "SAR" & sum(W1) == 0) {
     print("The SAR Model contains W1=0, it is a usual non-spatial GAMLSS")
   }
@@ -158,10 +159,10 @@ SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
     var_cov_matrix <- matrix(c(NA, NA,NA, solve(Hessian[2,2])), ncol=2, nrow=2)
     spacov =var_cov_matrix 
   }
-  out1 <- list("gamlss"=m0, 
-               "spatial"=list("spatial"=spamu, "sdspatial"=spacov, "type"=type),
-               "gamlssAY"=m1)
-  #class(out1) <- "SARARgamlss"
+  out1 <- list(gamlss=m0, model = mf, 
+               spatial=list(spatial=spamu, sdspatial=spacov, type=type),
+               gamlssAY=m1)
+  class(out1) <- "SARARgamlss"
   return(out1)
 }
 

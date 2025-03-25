@@ -70,7 +70,7 @@ summary_SAR <- function(object, ...) {
   else if (inherits(object, "GEESAR")) {
     
     beta_hat <- object$coefficients
-    vcov_matrix <- object$vcovs
+    vcov_matrix <- object$naive
     std_error <- sqrt(diag(vcov_matrix))
     Z_stat <- beta_hat / std_error
     p_values <- 2 * (1 - pnorm(abs(Z_stat)))

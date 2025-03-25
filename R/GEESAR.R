@@ -14,7 +14,6 @@
 #' @param toler Convergence tolerance for iterative optimization. Default is `1e-05`.
 #' @param maxit Maximum number of iterations for model fitting. Default is `50`.
 #' @param trace Logical; if `TRUE`, prints iteration details. Default is `FALSE`.
-#' @param ... Additional arguments (currently unused).
 #'
 #' @details
 #' The function estimates a spatially autoregressive GEE model by iteratively updating the spatial dependence 
@@ -49,7 +48,6 @@
 #' Source: [Focus to learn more](https://doi.org/10.48550/arXiv.2412.00945)
 #'
 #' @examples
-#' \dontrun{
 #' library(spdep)
 #' library(sp)
 #' data(meuse)
@@ -57,17 +55,16 @@
 #' W <- nb2mat(knn2nb(knearneigh(meuse, k=5)), style="W")
 #' fit <- GEESAR(cadmium ~ dist + elev, family=poisson(), data=meuse, W=W)
 #' summary_SAR(fit)
-#' }
 #'
 #' @export
 
 GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
                     start = NULL, 
-          toler = 1e-05, maxit = 50, trace = FALSE, ...) {
-  mf <- model.frame(formula, data=data)
-  y <- as.matrix(model.response(mf))
+          toler = 1e-04, maxit = 200, trace = FALSE, ...) {
+  mf <- stats::model.frame(formula, data=data)
+  y <- base::as.matrix(model.response(mf))
   if (is(family, "function")) 
-    family <- family()
+    family <- stats::family()
   if (family$family %in% c("quasi", "quasibinomial", "quasipoisson")) {
     if (family$family == "quasi") {
       family$family <- switch(family$varfun, constant = "gaussian", 
@@ -124,6 +121,8 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
     qll <- function(weights, y, mu) -weights * (y/mu + log(mu))
   if (family$family == "inverse.gaussian") 
     qll <- function(weights, y, mu) weights * (mu - y/2)/mu^2
+  if (family$family == "ptfamily") 
+    qll <- function(weights, y, mu) weights * (y*log(mu)-mu-log(1-exp(-mu)))
   if (family$family == "Negative Binomial") {
     .Theta <- function() return(.Theta)
     environment(.Theta) <- environment(family$variance)
@@ -150,7 +149,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
     qll <- function(weights, y, mu) family$dev.resids(y, mu, weights)
   
   qllp <- function(rho, beta, W, D,n){
-    A = diag(n) - rho*W
+    A <- diag(n) - rho*W
     Xi <-solve(A)%*%matrix(D[, 1:p], ncol = p)
     yi <- D[, p + 1]
     ni <- nrow(Xi)
@@ -160,24 +159,25 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
     return(-QL)
   }
   score <- function(D, W, rho, beta, ni) {
-    A = diag(ni) - rho*W
-    Xi <-solve(A)%*%matrix(D[, 1:p], ncol = p)
+    A <- diag(ni) - rho*W
+    Xi <- solve(A)%*%matrix(D[, 1:p], ncol = p)
     yi <- D[, p + 1]
     ni <- nrow(Xi)
     etai <- Xi %*% beta + D[, p + 2]
     mui <- family$linkinv(etai[,1])
     wi <- sqrt(family$variance(mui)/D[, p + 3])
-    Xiw <- Xi * matrix(family$mu.eta(etai[,1]), nrow(Xi), p)
-    Vi <- t(solve(crossprod(A)) * matrix(wi, ni, ni)) * 
-      matrix(wi, ni, ni)
-    Vi2 <- chol2inv(chol(Vi))
+    Xiw <- diag(family$mu.eta(etai[,1]))%*%Xi 
+    Vi2 <- diag(1/wi)%*%tcrossprod(A) %*% diag(1/wi)
     Xiw2 <- crossprod(Vi2, Xiw)
     cbind(crossprod(Xiw2, (yi - mui)), crossprod(Xiw2,Xiw), 
                crossprod(Xiw2, (tcrossprod(yi - mui)) %*% Xiw2))
   }
   
+  if(family2$family=="ptfamily" &  !all(y>0)){
+    stop("Only y>1 are allowed in ptfamily!!", call. = FALSE)
+  }
   rho <- 0
-  A = diag(n) - rho*W
+  A <- diag(n) - rho*W
   
   beta_new <- try(glm.fit(y = y, x = solve(A)%*%X, family = family2, 
                             weights = weights, offset = offs), silent = TRUE)
@@ -188,8 +188,8 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   niterrho <- 1
   
   # rrr = c()
-  # for(rho in seq(-1,0.99,0.01)) rrr = c(rrr, qllp(rho=rho, W=W, D=datas, beta=beta_new, n=n))
-  # plot(seq(-1,0.99, 0.01),rrr, type="l")
+  # for(rho in seq(-0.9,0.9,0.01)) rrr = c(rrr, qllp(rho=rho, W=W, D=datas, beta=beta_new, n=n))
+  # plot(seq(-0.9,0.9, 0.01),-rrr, type="l")
   # 
   Result <- rho_new
   while(tolrho>toler & niterrho < maxit){
@@ -204,7 +204,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   while (tol > toler & niter < maxit) {
     beta_old <- beta_new
     resume2 <- score(D=datas,W=W, rho=rho, beta = beta_old, ni=n)
-    kchol <- chol2inv(chol(resume2[1:p, 2:(p + 1)]))
+    kchol <- base::chol2inv(chol(resume2[1:p, 2:(p + 1)]))
     beta_new <- beta_old + crossprod(kchol, resume2[, 1])
     tol <- max(abs((beta_new - beta_old)/beta_old))
     niter <- niter + 1
@@ -218,34 +218,36 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   niterrho <- niterrho + 1
   Result = c(Result, rho_new)
   }
-  
+  ## plot(as.ts(Result))
   ##print(rho_f)
-  
   rho <- rho_new
+  resume2 <- score(D=datas,W=W, rho=rho, beta = beta_new, ni=n)
   A = diag(n) - rho*W
   rownames(beta_new) <- colnames(X)
   colnames(beta_new) <- ""
-  if (niter == maxit) 
+  if (niterrho == maxit) 
     warning("Iteration limit exceeded!!\n", call. = FALSE)
   eta <- solve(A)%*% X %*% beta_new + offs
   mu <- family$linkinv(eta[,1])
-  phiis <- diag(solve(crossprod(A)))
-  vari <- sqrt(family$variance(mu)/datas[, p + 3]*phiis)
+  phiis <- diag(solve(tcrossprod(A)))
+  vari <- sqrt(family$variance(mu)/(datas[, p + 3]*phiis))
   phi <- sum(((y-mu)/sqrt(vari))^2)/(n-p)
-  sera <- try(chol(R), silent = TRUE)
   I0 <- solve(resume2[1:p, 2:(p + 1)])
   I1 <- resume2[1:p, (p + 2):(2 * p + 1)]
   RJC <- crossprod(I0, I1)
   vcovs <- RJC %*% I0
+  if(family$family =="binomial" & all(weights==1)){
+    vcovs <- I0
+  }
   rownames(vcovs) <- colnames(X)
   colnames(vcovs) <- colnames(X)
   
   w <- sqrt(weights * family2$mu.eta(eta[,1])^2/family2$variance(mu))
-  Xw <- matrix(w, nrow(X), ncol(X)) * X
-  CIC <- sum(diag((crossprod(Xw)/phi) %*% vcovs))
+  Xw <- matrix(w, nrow(X), ncol(X)) * (A%*%X)
+  CIC <- sum(diag((crossprod(Xw)/phi) %*% I0))
   RJC <- sqrt((1 - sum(diag(RJC))/(p * phi))^2 + (1 - sum(diag(RJC %*% 
                                                                  RJC))/(p * phi^2))^2)
-  logLik <- -qllp(rho=rho, W=W, D=datas, beta=beta_new, n=n)/phi
+  logLik <- -qllp(rho=rho, W=W, D=datas, beta=beta_new, n=n)
   estfun <- as.matrix(resume2[, 1])
   rownames(estfun) <- colnames(X)
   colnames(estfun) <- ""
@@ -255,9 +257,11 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
                offset = offs, model = mf, data = data, 
                score = score, converged = ifelse(niter < maxit, TRUE, FALSE), estfun = estfun, 
                naive = I0, family = family,  phi = phi, phiis = phiis, CIC = CIC, RJC = RJC, 
-               logLik = logLik, deviance = sum(family$dev.resids(y, mu, weights)), df.residual = length(y) - length(beta_new), 
+               logLik = logLik, deviance = sum(family$dev.resids(y, mu, weights)), 
+               df.residual = length(y) - length(beta_new), 
                levels = .getXlevels(attr(mf, "terms"), mf),
-               contrasts = attr(X, "contrasts"), start = start, iter = niter, linear = TRUE)
+               contrasts = attr(X, "contrasts"), 
+               start = start, iter = niter, linear = TRUE)
   class(out_) <- "GEESAR"
   return(out_)
 }

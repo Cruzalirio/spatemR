@@ -11,8 +11,8 @@ GEESAR(
   data,
   W,
   start = NULL,
-  toler = 1e-05,
-  maxit = 50,
+  toler = 1e-04,
+  maxit = 200,
   trace = FALSE,
   ...
 )
@@ -35,8 +35,6 @@ GEESAR(
 \item{maxit}{Maximum number of iterations for model fitting. Default is `50`.}
 
 \item{trace}{Logical; if `TRUE`, prints iteration details. Default is `FALSE`.}
-
-\item{...}{Additional arguments (currently unused).}
 
 \item{corr}{Unused parameter (reserved for future correlation structures).}
 }
@@ -72,7 +70,6 @@ The function supports common GLM families (`gaussian`, `binomial`, `poisson`, `G
 their quasi-likelihood equivalents.
 }
 \examples{
-\dontrun{
 library(spdep)
 library(sp)
 data(meuse)
@@ -80,7 +77,6 @@ coordinates(meuse) <- ~x+y
 W <- nb2mat(knn2nb(knearneigh(meuse, k=5)), style="W")
 fit <- GEESAR(cadmium ~ dist + elev, family=poisson(), data=meuse, W=W)
 summary_SAR(fit)
-}
 
 }
 \references{
