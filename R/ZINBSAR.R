@@ -15,10 +15,10 @@
 #' 
 #' @examples
 #' set.seed(123)
-#' n <- 500
+#' n <- 100
 #' x <- rnorm(n)
 #' y <- rpois(n, lambda = exp(0.5 * x))
-#' y[y == 0] <- rbinom(sum(y == 0), 1, 0.3)  # Introduce zeros
+#' y[rbinom(n, 1, 1/(1+exp(-0.5*x)))] <- 0  # Introduce zeros
 #' W <- matrix(rbinom(n^2,1,0.2), n, n)  # Example spatial weight matrix
 #' diag(W) <- 0
 #' rtot <- rowSums(W)
@@ -58,3 +58,4 @@ Hurdle_GEESAR <- function(formula, data, W, weights = NULL, toler = 1e-05, maxit
   
   return(list(logit_model = geesar_logit, poisson_truncated_model = geesar_poisson_truncated))
 }
+
