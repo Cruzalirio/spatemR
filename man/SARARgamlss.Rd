@@ -5,7 +5,7 @@
 \title{SARARgamlss: Spatial Autoregressive Generalized Additive Model for Location Scale (GAMLSS)}
 \usage{
 SARARgamlss(
-  formula = formula(data),
+  formula,
   sigma.formula = ~1,
   W1 = diag(0, nrow(data)),
   W2 = diag(0, nrow(data)),

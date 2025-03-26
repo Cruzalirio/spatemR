@@ -36,7 +36,7 @@
 #' 
 #' @export
 #' @import gamlss splines
-SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
+SARARgamlss <- function(formula, sigma.formula = ~1,
                         W1 = diag(0, nrow(data)), W2 = diag(0, nrow(data)),
                         data, tol = 1E-4, maxiter = 20,
                         type = c("SAR", "SARAR", "SEM"),
@@ -159,7 +159,9 @@ SARARgamlss <- function(formula = formula(data), sigma.formula = ~1,
     var_cov_matrix <- matrix(c(NA, NA,NA, solve(Hessian[2,2])), ncol=2, nrow=2)
     spacov =var_cov_matrix 
   }
-  out1 <- list(gamlss=m0, model = mf, 
+  # model.frame(m0)[,1] <- as.vector(model.frame(m1)[,1])
+  m0$call$data <- data 
+  out1 <- list(gamlss=m0, model = mf, data=data,
                spatial=list(spatial=spamu, sdspatial=spacov, type=type),
                gamlssAY=m1)
   class(out1) <- "SARARgamlss"
