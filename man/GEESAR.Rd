@@ -35,8 +35,6 @@ GEESAR(
 \item{maxit}{Maximum number of iterations for model fitting. Default is `50`.}
 
 \item{trace}{Logical; if `TRUE`, prints iteration details. Default is `FALSE`.}
-
-\item{corr}{Unused parameter (reserved for future correlation structures).}
 }
 \value{
 A list of class `"glmgee"` containing:

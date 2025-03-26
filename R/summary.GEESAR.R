@@ -20,6 +20,7 @@
 #' summary_custom(result_geesar)
 #' }
 #' @export
+
 summary_SAR <- function(object, ...) {
   
   # Verificar si el objeto es de clase 'SARARgamlss'

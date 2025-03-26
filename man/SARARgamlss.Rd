@@ -40,14 +40,14 @@ SARARgamlss(
 }
 \value{
 A fitted GAMLSS model object with spatial autoregressive terms. The model object also includes
-the variance of the spatial parameters \(\hat{\rho}\) and \(\hat{\lambda}\).
+the variance of the spatial parameters \eqn{\hat{\rho}} and \eqn{\hat{\lambda}}
 }
 \description{
 This function estimates a Spatial Autoregressive Generalized Additive Model for Location Scale 
 (SARARgamlss) using GAMLSS. The model includes both spatial dependencies and the possibility of 
 non-parametric terms in the formulas for the mean and variance. The function supports SAR, SARAR, 
 and SEM model types and performs the estimation through an iterative process that updates spatial 
-dependence parameters. The variance of the spatial parameters \(\hat{\rho}\) and \(\hat{\lambda}\) 
+dependence parameters. The variance of the spatial parameters \eqn{\hat{\rho}} and \eqn{\hat{\lambda}}
 is estimated using the inverse of the Hessian matrix from the optimization.
 }
 \examples{

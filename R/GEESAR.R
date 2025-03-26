@@ -9,7 +9,6 @@
 #' @param weights Optional vector of prior weights. Must be positive.
 #' @param data A data frame containing the variables in the model.
 #' @param W A spatial weights matrix defining the spatial dependence structure.
-#' @param corr Unused parameter (reserved for future correlation structures).
 #' @param start Optional starting values for parameter estimation.
 #' @param toler Convergence tolerance for iterative optimization. Default is `1e-05`.
 #' @param maxit Maximum number of iterations for model fitting. Default is `50`.
