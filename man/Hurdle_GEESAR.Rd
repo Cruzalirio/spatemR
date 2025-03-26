@@ -38,6 +38,7 @@ This function fits a hurdle model using GEESAR, consisting of:
 (2) A truncated Poisson model for positive counts.
 }
 \examples{
+\dontrun{
 set.seed(123)
 n <- 100
 x <- rnorm(n)
@@ -50,5 +51,6 @@ W <- W/ifelse(rtot==0, 0.1, rtot)
 model <- Hurdle_GEESAR(y ~ x, data = data.frame(y, x), W = W)
 summary_SAR(model$logit_model)
 summary_SAR(model$poisson_truncated_model)
+}
 
 }

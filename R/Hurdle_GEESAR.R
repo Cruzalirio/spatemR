@@ -14,6 +14,7 @@
 #' @return A list containing the logit and Poisson-truncated models.
 #' 
 #' @examples
+#' \dontrun{
 #' set.seed(123)
 #' n <- 100
 #' x <- rnorm(n)
@@ -26,6 +27,7 @@
 #' model <- Hurdle_GEESAR(y ~ x, data = data.frame(y, x), W = W)
 #' summary_SAR(model$logit_model)
 #' summary_SAR(model$poisson_truncated_model)
+#'}
 #'
 #'@export
 Hurdle_GEESAR <- function(formula, data, W, weights = NULL, toler = 1e-05, maxit = 200, trace = FALSE) {
