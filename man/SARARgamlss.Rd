@@ -13,8 +13,7 @@ SARARgamlss(
   tol = 1e-04,
   maxiter = 20,
   type = c("SAR", "SARAR", "SEM"),
-  weights = NULL,
-  ...
+  weights = NULL
 )
 }
 \arguments{
@@ -35,8 +34,6 @@ SARARgamlss(
 \item{type}{The type of spatial model to fit: one of "SAR", "SARAR", or "SEM".}
 
 \item{weights}{Optional weights for the observations (default: NULL).}
-
-\item{...}{Additional arguments passed to `gamlss`.}
 }
 \value{
 A fitted GAMLSS model object with spatial autoregressive terms. The model object also includes
@@ -52,15 +49,22 @@ is estimated using the inverse of the Hessian matrix from the optimization.
 }
 \examples{
 library(spdep)
+library(gamlss)
 data(oldcol)
-Create spatial weight matrices W1 and W2
+# Create spatial weight matrices W1 and W2
 W1 <- spdep::nb2mat(COL.nb, style = "W")
 W2 <- W1  # In this case, assume the same spatial weights for both
 # Fit a SARARgamlss model
 result <- SARARgamlss(formula = CRIME ~ INC + cs(HOVAL), 
 sigma.formula = ~ INC + pb(HOVAL), W1 = W1, W2 = W2,data = COL.OLD, 
 tol = 1E-4,  maxiter = 20, type = "SARAR")
-data = COL.OLD
 summary_SAR(result)
+gamlss::term.plot(result$gamlss, what="mu")
 
+}
+\references{
+Toloza-Delgado, J. D., Melo, O. O., & Cruz, N. A.
+ Joint spatial modeling of mean and non-homogeneous variance combining semiparametric SAR 
+ and GAMLSS models for hedonic prices. Spatial Statistics, 65, 100864 (2025)
+ @source https://doi.org/10.1016/j.spasta.2024.100864
 }

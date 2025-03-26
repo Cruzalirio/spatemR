@@ -22,7 +22,7 @@
 #' The function supports common GLM families (`gaussian`, `binomial`, `poisson`, `Gamma`, `inverse.gaussian`) and 
 #' their quasi-likelihood equivalents.
 #'
-#' @return A list of class `"glmgee"` containing:
+#' @return A list of class `"GEESAR"` containing:
 #' \item{coefficients}{Estimated regression coefficients.}
 #' \item{rho}{Estimated spatial autoregressive parameter.}
 #' \item{fitted.values}{Predicted values from the model.}
@@ -41,17 +41,18 @@
 #' \item{RJC}{Robust Jackknife Correction.}
 #'
 #' @seealso
-#' \code{\link{glm}}, \code{\link{gee}}, \code{\link{spdep}}
+#' \code{\link{glm}}, \code{\link[gee]{gee}}, \code{\link[spdep]{spdep}}
 #'
-#' @references
-#' Source: [Focus to learn more](https://doi.org/10.48550/arXiv.2412.00945)
+#' @references Cruz, N. A., Toloza-Delgado, J. D., & Melo, O. O. (2024). 
+#' Generalized spatial autoregressive model. arXiv preprint arXiv:2412.00945.
+#' @source https://doi.org/10.48550/arXiv.2412.00945
 #'
 #' @examples
 #' library(spdep)
 #' library(sp)
 #' data(meuse)
-#' coordinates(meuse) <- ~x+y
-#' W <- nb2mat(knn2nb(knearneigh(meuse, k=5)), style="W")
+#' sp::coordinates(meuse) <- ~x+y
+#' W <- spdep::nb2mat(knn2nb(knearneigh(meuse, k=5)), style="W")
 #' fit <- GEESAR(cadmium ~ dist + elev, family=poisson(), data=meuse, W=W)
 #' summary_SAR(fit)
 #'
@@ -59,7 +60,7 @@
 
 GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
                     start = NULL, 
-          toler = 1e-04, maxit = 200, trace = FALSE, ...) {
+          toler = 1e-04, maxit = 200, trace = FALSE) {
   mf <- stats::model.frame(formula, data=data)
   y <- base::as.matrix(model.response(mf))
   if (is(family, "function")) 
@@ -215,7 +216,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   varrho <- -rho_f$hessian[1,1]
   tolrho <- abs(rho_new-rho)
   niterrho <- niterrho + 1
-  Result = c(Result, rho_new)
+  Result <- c(Result, rho_new)
   }
   ## plot(as.ts(Result))
   ##print(rho_f)

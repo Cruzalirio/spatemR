@@ -3,6 +3,9 @@
 \name{GEESAR}
 \alias{GEESAR}
 \title{Generalized Estimating Equations with Spatial Autoregressive Components}
+\source{
+https://doi.org/10.48550/arXiv.2412.00945
+}
 \usage{
 GEESAR(
   formula,
@@ -13,8 +16,7 @@ GEESAR(
   start = NULL,
   toler = 1e-04,
   maxit = 200,
-  trace = FALSE,
-  ...
+  trace = FALSE
 )
 }
 \arguments{
@@ -37,7 +39,7 @@ GEESAR(
 \item{trace}{Logical; if `TRUE`, prints iteration details. Default is `FALSE`.}
 }
 \value{
-A list of class `"glmgee"` containing:
+A list of class `"GEESAR"` containing:
 \item{coefficients}{Estimated regression coefficients.}
 \item{rho}{Estimated spatial autoregressive parameter.}
 \item{fitted.values}{Predicted values from the model.}
@@ -71,15 +73,16 @@ their quasi-likelihood equivalents.
 library(spdep)
 library(sp)
 data(meuse)
-coordinates(meuse) <- ~x+y
-W <- nb2mat(knn2nb(knearneigh(meuse, k=5)), style="W")
+sp::coordinates(meuse) <- ~x+y
+W <- spdep::nb2mat(knn2nb(knearneigh(meuse, k=5)), style="W")
 fit <- GEESAR(cadmium ~ dist + elev, family=poisson(), data=meuse, W=W)
 summary_SAR(fit)
 
 }
 \references{
-Source: [Focus to learn more](https://doi.org/10.48550/arXiv.2412.00945)
+Cruz, N. A., Toloza-Delgado, J. D., & Melo, O. O. (2024). 
+Generalized spatial autoregressive model. arXiv preprint arXiv:2412.00945.
 }
 \seealso{
-\code{\link{glm}}, \code{\link{gee}}, \code{\link{spdep}}
+\code{\link{glm}}, \code{\link[gee]{gee}}, \code{\link[spdep]{spdep}}
 }

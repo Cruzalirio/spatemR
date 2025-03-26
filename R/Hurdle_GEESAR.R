@@ -27,7 +27,8 @@
 #' summary_SAR(model$logit_model)
 #' summary_SAR(model$poisson_truncated_model)
 #'
-Hurdle_GEESAR <- function(formula, data, W, weights = NULL, toler = 1e-05, maxit = 200, trace = FALSE, ...) {
+#'@export
+Hurdle_GEESAR <- function(formula, data, W, weights = NULL, toler = 1e-05, maxit = 200, trace = FALSE) {
   
   # Modelo logit para y == 0 vs y > 0
   data$y_binary <- as.numeric(data[[all.vars(formula)[1]]] > 0)

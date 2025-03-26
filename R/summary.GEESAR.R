@@ -13,11 +13,11 @@
 #' result_sarar <- SARARgamlss(formula = CRIME ~ INC + HOVAL, 
 #'                             sigma.formula = ~ INC + pb(HOVAL), 
 #'                             W1 = W1, W2 = W2, data = data)
-#' summary_custom(result_sarar)
+#' summary_SAR(result_sarar)
 #' 
 #' # Example for GEESAR model
 #' result_geesar <- GEESAR(formula = CRIME ~ INC + HOVAL, data = data, W = W1)
-#' summary_custom(result_geesar)
+#' summary_SAR(result_geesar)
 #' }
 #' @export
 

@@ -14,6 +14,7 @@
 #' model <- glm(y ~ x, family = ptfamily())
 #' summary(model)
 #'
+#'@export
 
 ptfamily <- function (link = "log") 
 {

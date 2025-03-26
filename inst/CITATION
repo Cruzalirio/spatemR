@@ -1,0 +1,16 @@
+citHeader("To cite spatemR in publications use:")
+
+bibentry(
+  bibtype    = "Article",
+  title    = "Joint spatial modeling of mean and non-homogeneous variance combining semiparametric SAR and GAMLSS models for hedonic prices",
+  author   = c(person("Nelson Alirio", "Cruz Gutierrez", role = c("aut", "cre","cph"),
+                      email = "neacruzgu@unal.edu.co"),
+                     person("Oscar Orlando", "Melo", role = "aut"),
+                     person("Jurgen", "Toloza-Delgado", role="aut")),
+  journal  = "Spatial Statistics",
+  year     = "2025",
+  volume   = "65",
+  pages    = "100864",
+  url      = "https://doi.org/10.1016/j.spasta.2024.100864"
+)
+
