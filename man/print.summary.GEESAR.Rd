@@ -11,6 +11,9 @@
 
 \item{...}{Additional arguments (currently unused).}
 }
+\value{
+Print a summary for the specified Generalized Spatial Autoregresive Model class.
+}
 \description{
 This method prints a formatted summary of a 'summary.GEESAR' object,
 including details of the model coefficients, rho, dispersion, and other statistics.

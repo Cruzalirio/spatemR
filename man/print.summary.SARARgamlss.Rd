@@ -11,6 +11,9 @@
 
 \item{...}{Additional arguments (currently unused).}
 }
+\value{
+Print a summary for the specified GAMLSS model.
+}
 \description{
 This method prints a formatted summary of a 'summary.SARARgamlss' object,
 including details of the GAMLSS model, spatial parameters (rho and lambda), 

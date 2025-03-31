@@ -70,6 +70,7 @@ The function supports common GLM families (`gaussian`, `binomial`, `poisson`, `G
 their quasi-likelihood equivalents.
 }
 \examples{
+\donttest{
 library(spdep)
 library(sp)
 data(meuse)
@@ -77,7 +78,7 @@ sp::coordinates(meuse) <- ~x+y
 W <- spdep::nb2mat(knn2nb(knearneigh(meuse, k=5)), style="W")
 fit <- GEESAR(cadmium ~ dist + elev, family=poisson(), data=meuse, W=W)
 summary_SAR(fit)
-
+}
 }
 \references{
 Cruz, N. A., Toloza-Delgado, J. D., & Melo, O. O. (2024). 

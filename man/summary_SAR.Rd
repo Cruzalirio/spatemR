@@ -4,12 +4,10 @@
 \alias{summary_SAR}
 \title{Custom Summary Function for SARARgamlss and GEESAR Models}
 \usage{
-summary_SAR(object, ...)
+summary_SAR(object)
 }
 \arguments{
 \item{object}{An object of class 'SARARgamlss' or 'GEESAR'.}
-
-\item{...}{Additional arguments (currently unused).}
 }
 \value{
 A list containing the summary for the specified model class.
@@ -20,15 +18,21 @@ It combines the summary outputs for both models, including GAMLSS model details,
 spatial parameters (rho and lambda), and Wald tests.
 }
 \examples{
-\dontrun{
-# Example for SARARgamlss model
+\donttest{
+library(spdep)
+library(gamlss)
+data(oldcol)
+W1 <- spdep::nb2mat(COL.nb, style = "W")
+W2 <- W1  # In this case, assume the same spatial weights for both
+# Fit a SARARgamlss model
 result_sarar <- SARARgamlss(formula = CRIME ~ INC + HOVAL, 
                             sigma.formula = ~ INC + pb(HOVAL), 
-                            W1 = W1, W2 = W2, data = data)
+                            W1 = W1, W2 = W2, data = COL.OLD,
+                            type="SAR")
 summary_SAR(result_sarar)
 
 # Example for GEESAR model
-result_geesar <- GEESAR(formula = CRIME ~ INC + HOVAL, data = data, W = W1)
+result_geesar <- GEESAR(formula = CRIME ~ INC + HOVAL, data = COL.OLD, W = W1)
 summary_SAR(result_geesar)
 }
 }

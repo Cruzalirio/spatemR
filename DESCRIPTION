@@ -1,6 +1,6 @@
 Package: spatemR
 Type: Package
-Title:  Spatial Autoregresive Models with GAMLSS, and Generalized Spatial Autoregresive Models with GEE
+Title:  Generalized Spatial Autoregresive Models for Mean and Variance
 Version: 1.0.0
 Authors@R: c(person("Nelson Alirio", "Cruz Gutierrez", 
                 role = c("aut", "cre","cph"), email = "nelson-alirio.cruz@uib.es"), 

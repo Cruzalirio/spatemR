@@ -48,6 +48,7 @@
 #' @source https://doi.org/10.48550/arXiv.2412.00945
 #'
 #' @examples
+#' \donttest{
 #' library(spdep)
 #' library(sp)
 #' data(meuse)
@@ -55,7 +56,7 @@
 #' W <- spdep::nb2mat(knn2nb(knearneigh(meuse, k=5)), style="W")
 #' fit <- GEESAR(cadmium ~ dist + elev, family=poisson(), data=meuse, W=W)
 #' summary_SAR(fit)
-#'
+#'}
 #' @export
 
 GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,

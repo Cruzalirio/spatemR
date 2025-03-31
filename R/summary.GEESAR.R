@@ -5,23 +5,28 @@
 #' spatial parameters (rho and lambda), and Wald tests.
 #'
 #' @param object An object of class 'SARARgamlss' or 'GEESAR'.
-#' @param ... Additional arguments (currently unused).
 #' @return A list containing the summary for the specified model class.
 #' @examples
-#' \dontrun{
-#' # Example for SARARgamlss model
+#' \donttest{
+#' library(spdep)
+#' library(gamlss)
+#' data(oldcol)
+#' W1 <- spdep::nb2mat(COL.nb, style = "W")
+#' W2 <- W1  # In this case, assume the same spatial weights for both
+#' # Fit a SARARgamlss model
 #' result_sarar <- SARARgamlss(formula = CRIME ~ INC + HOVAL, 
 #'                             sigma.formula = ~ INC + pb(HOVAL), 
-#'                             W1 = W1, W2 = W2, data = data)
+#'                             W1 = W1, W2 = W2, data = COL.OLD,
+#'                             type="SAR")
 #' summary_SAR(result_sarar)
 #' 
 #' # Example for GEESAR model
-#' result_geesar <- GEESAR(formula = CRIME ~ INC + HOVAL, data = data, W = W1)
+#' result_geesar <- GEESAR(formula = CRIME ~ INC + HOVAL, data = COL.OLD, W = W1)
 #' summary_SAR(result_geesar)
 #' }
 #' @export
 
-summary_SAR <- function(object, ...) {
+summary_SAR <- function(object) {
   
   # Verificar si el objeto es de clase 'SARARgamlss'
   if (!is.null(object$gamlss)) {
@@ -118,6 +123,7 @@ summary_SAR <- function(object, ...) {
 #'
 #' @param x An object of class 'summary.SARARgamlss'.
 #' @param ... Additional arguments (currently unused).
+#' @return Print a summary for the specified GAMLSS model.
 #' @export
 print.summary.SARARgamlss <- function(x, ...) {
   cat("\nSpatial Parameters Summary:\n")
@@ -140,6 +146,7 @@ print.summary.SARARgamlss <- function(x, ...) {
 #'
 #' @param x An object of class 'summary.GEESAR'.
 #' @param ... Additional arguments (currently unused).
+#' @return Print a summary for the specified Generalized Spatial Autoregresive Model class.
 #' @export
 print.summary.GEESAR <- function(x, ...) {
   cat("\nSummary of GEESAR Model\n")

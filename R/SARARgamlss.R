@@ -51,27 +51,15 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
                         data, tol = 1E-4, maxiter = 20,
                         type = c("SAR", "SARAR", "SEM"),
                         weights = NULL) {
-  
-  # Check for model type and handle accordingly
   mf <- stats::model.frame(formula, data=data)
-  if (type == "SAR" & sum(W1) == 0) {
-    print("The SAR Model contains W1=0, it is a usual non-spatial GAMLSS")
-  }
   if (type == "SAR") {
     W2 = 0 * W2
   }
   if (type == "SEM") {
     W1 = 0 * W1
   }
-  if (type == "SEM" & sum(W2) == 0) {
-    print("The SEM Model contains W2=0, it is a usual non-spatial GAMLSS")
-  }
-  if (type == "SARAR" & sum(W2) == 0 & sum(W1) == 0) {
-    print("The SARAR Model contains W1=0 and W2=0, it is a usual non-spatial GAMLSS")
-  }
   if (type == "SARAR" & sum(W2) == 0) {
     W2 <- W1
-    print("The SARAR Model assumes that W1 = W2")
   }
   
   # Initialize variables
