@@ -14,7 +14,7 @@
 #' @return A list containing the logit and Poisson-truncated models.
 #' 
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' set.seed(123)
 #' n <- 100
 #' x <- rnorm(n)

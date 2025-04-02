@@ -38,7 +38,7 @@ This function fits a hurdle model using GEESAR, consisting of:
 (2) A truncated Poisson model for positive counts.
 }
 \examples{
-\dontrun{
+\donttest{
 set.seed(123)
 n <- 100
 x <- rnorm(n)
