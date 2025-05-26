@@ -112,9 +112,9 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
     
     
     # Fit updated GAMLSS model with transformed data (dependent and independent)
-    m1 <- gamlss::gamlss(Ytemp ~ Xtemp - 1, ~Ztemp - 1)
+    m1 <- gamlss::gamlss(Ytemp ~ Xtemp - 1, ~Ztemp - 1, family = NO())
     var1 <- predict(m1, what = "sigma", type = "response")^2
-    Xbeta <- predict(m1, what = "mu", type = "response")
+    Xbeta <- solve(BB)%*%predict(m1, what = "mu", type = "response")
     
     # Optimize again with updated variance
     p0 <- optim(par = c(0, 0), fn = loglik, method = "L-BFGS-B", W1 = W1, W2 = W2, 
