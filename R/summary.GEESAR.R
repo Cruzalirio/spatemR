@@ -31,6 +31,7 @@ summary_SAR <- function(object) {
   # Verificar si el objeto es de clase 'SARARgamlss'
   if (!is.null(object$gamlss)) {
     
+    object$gamlss$call$data <- NULL
     # Resumen del modelo GAMLSS dentro del objeto SARARgamlss
     sum_gamlss <- summary(object$gamlss, type="qr")
     

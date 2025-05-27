@@ -158,10 +158,34 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
     spacov =var_cov_matrix 
   }
   # model.frame(m0)[,1] <- as.vector(model.frame(m1)[,1])
-  m0$call$data <- data 
-  out1 <- list(gamlss=m0, model = mf, data=data,
+  m0$call$data <- mf
+  
+  X <- model.matrix(m0, what = "mu")
+  beta <- coef(m0, "mu")
+  Omega <- diag(predict(m0, what = "sigma")^2)
+  rho <- p0[1]
+  lambda <- p0[2]
+  AA <- diag(n) - rho * W1
+  BB <- diag(n) - lambda * W2
+  varU <- solve(BB) %*% Omega %*% t(solve(BB))
+  
+  inv_cov <- solve(lambda^2 * W2 %*% varU %*% t(W2) +
+                     lambda * solve(BB) %*% Omega %*% t(W2) +
+                     lambda * W2 %*% solve(BB) %*% Omega +
+                     Omega)
+  y_true <- Y
+  y_signal <- (lambda * varU + solve(BB) %*% Omega) %*% inv_cov %*% 
+    (y_true - solve(AA) %*% X %*% beta)
+  
+  y_trend <- rho * W1 %*% y_true + X %*% beta
+  y_blup <- y_trend + y_signal
+  residuals <- y_true - solve(AA) %*% X %*% beta
+  y_noise <- y_true - y_blup
+  
+  out1 <- list(gamlss=m0, model = mf,
                spatial=list(spatial=spamu, sdspatial=spacov, type=type),
-               gamlssAY=m1)
+               gamlssAY=m1,  y_signal = y_signal, y_trend = y_trend,
+               y_blup = y_blup, residuals = residuals,y_noise = y_noise)
   class(out1) <- "SARARgamlss"
   return(out1)
 }
