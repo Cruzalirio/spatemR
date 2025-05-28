@@ -170,16 +170,16 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
   varU <- solve(BB) %*% Omega %*% t(solve(BB))
   
   inv_cov <- solve(lambda^2 * W2 %*% varU %*% t(W2) +
-                     lambda * solve(BB) %*% Omega %*% t(W2) +
+                     lambda *  Omega %*% t(solve(BB)) %*% t(W2) +
                      lambda * W2 %*% solve(BB) %*% Omega +
                      Omega)
   y_true <- Y
-  y_signal <- (lambda * varU + solve(BB) %*% Omega) %*% inv_cov %*% 
-    (y_true - solve(AA) %*% X %*% beta)
+  y_signal <- (lambda* W2 %*% varU + solve(BB) %*% Omega) %*% inv_cov %*% 
+    (AA%*%y_true -  X %*% beta)
   
   y_trend <- rho * W1 %*% y_true + X %*% beta
   y_blup <- y_trend + y_signal
-  residuals <- y_true - solve(AA) %*% X %*% beta
+  residuals <- AA%*%y_true -  X %*% beta
   y_noise <- y_true - y_blup
   
   out1 <- list(gamlss=m0, model = mf,
