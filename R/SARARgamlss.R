@@ -40,7 +40,7 @@
 #' @export
 #' @importFrom methods is
 #' @importFrom stats .getXlevels binomial dpois fitted gaussian glm.fit 
-#' @importFrom stats make.link model.matrix model.offset model.response 
+#' @importFrom stats make.link model.matrix model.offset model.response coef
 #' @importFrom stats optim pchisq pnorm predict printCoefmat rpois update
 #' @import gamlss
 #' @import splines
@@ -52,6 +52,7 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
                         type = c("SAR", "SARAR", "SEM"),
                         weights = NULL) {
   mf <- stats::model.frame(formula, data=data)
+  data_name <- substitute(data) 
   if (type == "SAR") {
     W2 = 0 * W2
   }
@@ -69,7 +70,7 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
   
   # Fit the initial GAMLSS model for mean (mu) and variance (sigma)
   m0 <- gamlss::gamlss(formula = formula, sigma.formula = sigma.formula, 
-                       data = data, family = NO())
+                       data = eval(data_name, parent.frame()), family = NO())
   
   Y <- matrix(m0$y, ncol = 1)
   
@@ -158,10 +159,10 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
     spacov =var_cov_matrix 
   }
   # model.frame(m0)[,1] <- as.vector(model.frame(m1)[,1])
-  m0$call$data <- mf
+  m0$call$data <- data_name
   
   X <- model.matrix(m0, what = "mu")
-  beta <- coef(m0, "mu")
+  beta <- stats::coef(m0, "mu")
   Omega <- diag(predict(m0, what = "sigma")^2)
   rho <- p0[1]
   lambda <- p0[2]
