@@ -244,8 +244,8 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   colnames(vcovs) <- colnames(X)
   
   w <- sqrt(weights * family2$mu.eta(eta[,1])^2/family2$variance(mu))
-  Xw <- matrix(w, nrow(X), ncol(X)) * (A%*%X)
-  CIC <- sum(diag((crossprod(Xw)/phi) %*% I0))
+  Xw <- matrix(w, nrow(X), ncol(X)) * (solve(A)%*%X)
+  CIC <- sum(diag((crossprod(Xw)*phi) %*% I0))
   RJC <- sqrt((1 - sum(diag(RJC))/(p * phi))^2 + (1 - sum(diag(RJC %*% 
                                                                  RJC))/(p * phi^2))^2)
   logLik <- -qllp(rho=rho, W=W, D=datas, beta=beta_new, n=n)
