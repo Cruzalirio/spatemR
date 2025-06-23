@@ -168,7 +168,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
     mui <- family$linkinv(etai[,1])
     wi <- sqrt(family$variance(mui)/D[, p + 3])
     Xiw <- diag(family$mu.eta(etai[,1]))%*%Xi 
-    Vi2 <- diag(1/wi)%*%crossprod(A) %*% diag(1/wi)
+    Vi2 <- diag(1/wi)%*%tcrossprod(A) %*% diag(1/wi)
     Xiw2 <- crossprod(Vi2, Xiw)
     cbind(crossprod(Xiw2, (yi - mui)), crossprod(Xiw2,Xiw), 
                crossprod(Xiw2, (tcrossprod(yi - mui)) %*% Xiw2))
