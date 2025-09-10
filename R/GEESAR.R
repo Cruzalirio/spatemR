@@ -37,6 +37,7 @@
 #' \item{deviance}{Residual deviance.}
 #' \item{df.residual}{Residual degrees of freedom.}
 #' \item{phi}{Dispersion parameter estimate.}
+#' \item{R}{Robust Variance Estimation.}
 #' \item{CIC}{Corrected Information Criterion.}
 #' \item{RJC}{Robust Jackknife Correction.}
 #'
@@ -62,7 +63,7 @@
 
 GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
                     start = NULL, 
-                    toler = 1e-04, maxit = 20, trace = FALSE) {
+                    toler = 1e-04, maxit = 200, trace = FALSE) {
   mf <- stats::model.frame(formula, data=data)
   y <- base::as.matrix(model.response(mf))
   if (is(family, "function")) 
@@ -289,7 +290,8 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
                prior.weights = weights, y = y, formula = formula, call = match.call(), 
                offset = offs, model = mf, data = data, 
                score = score, converged = ifelse(niter < maxit, TRUE, FALSE), estfun = estfun, 
-               naive = I0, family = family,  phi = phi, phiis = phiis, CIC = CIC, RJC = RJC, 
+               R = vcovs,naive = I0, family = family,  
+               phi = phi, phiis = phiis, CIC = CIC, RJC = RJC, 
                logLik = logLik, deviance = sum(family$dev.resids(y, mu, weights)), 
                df.residual = length(y) - length(beta_new), 
                levels = .getXlevels(attr(mf, "terms"), mf),

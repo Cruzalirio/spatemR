@@ -15,7 +15,7 @@ GEESAR(
   W,
   start = NULL,
   toler = 1e-04,
-  maxit = 20,
+  maxit = 200,
   trace = FALSE
 )
 }
@@ -54,6 +54,7 @@ A list of class `"GEESAR"` containing:
 \item{deviance}{Residual deviance.}
 \item{df.residual}{Residual degrees of freedom.}
 \item{phi}{Dispersion parameter estimate.}
+\item{R}{Robust Variance Estimation.}
 \item{CIC}{Corrected Information Criterion.}
 \item{RJC}{Robust Jackknife Correction.}
 }
