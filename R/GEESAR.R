@@ -58,10 +58,11 @@
 #' summary_SAR(fit)
 #'}
 #' @export
+#' @importFrom sphet spreg
 
 GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
                     start = NULL, 
-          toler = 1e-04, maxit = 200, trace = FALSE) {
+                    toler = 1e-04, maxit = 20, trace = FALSE) {
   mf <- stats::model.frame(formula, data=data)
   y <- base::as.matrix(model.response(mf))
   if (is(family, "function")) 
@@ -171,18 +172,33 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
     Vi2 <- diag(1/wi)%*%tcrossprod(A) %*% diag(1/wi)
     Xiw2 <- crossprod(Vi2, Xiw)
     cbind(crossprod(Xiw2, (yi - mui)), crossprod(Xiw2,Xiw), 
-               crossprod(Xiw2, (tcrossprod(yi - mui)) %*% Xiw2))
+          crossprod(Xiw2, (tcrossprod(yi - mui)) %*% Xiw2))
   }
   
   if(family2$family=="ptfamily" &  !all(y>0)){
     stop("Only y>1 are allowed in ptfamily!!", call. = FALSE)
   }
-  rho <- 0
+  
+  modTemp <- try(sphet::spreg(family$linkfun(y+1)~datas[, 1:p]-1,
+                              listw = W, model = "lag"),
+                 silent = TRUE)
+  if(!inherits(modTemp, "try-error")){
+    rho <- modTemp$coefficients[p+1]  
+  }else{
+    rho <- 0
+  }
   A <- diag(n) - rho*W
   
   beta_new <- try(glm.fit(y = y, x = solve(A)%*%X, family = family2, 
-                            weights = weights, offset = offs), silent = TRUE)
-  beta_new <- matrix(beta_new$coefficients, nrow=p)
+                          weights = weights, offset = offs), silent = TRUE)
+  if(!inherits(beta_new, "try-error")){
+    beta_new <- matrix(beta_new$coefficients, nrow=p)
+  }else if(!inherits(modTemp, "try-error")){
+    beta_new <- matrix(modTemp$coefficients[1:p], nrow=p)
+  }else{
+    beta_new <- matrix(0, ncol=p)
+  }
+  
   rho_f <- optim(par=rho,qllp, beta=beta_new, W=W, D=datas,n=n, method="L-BFGS-B", lower=-0.99,upper=0.99)
   rho_new <- rho_f$par
   tolrho <- 1
@@ -194,30 +210,45 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   # 
   Result <- rho_new
   while(tolrho>toler & niterrho < maxit){
-  rho <- rho_new
-  A = diag(n) - rho*W
-  beta_new <- try(glm.fit(y = y, x = solve(A)%*%X, family = family2, 
+    rho <- rho_new
+    A = diag(n) - rho*W
+    
+    beta_new <- try(glm.fit(y = y, x = solve(A)%*%X, family = family2, 
                             weights = weights, offset = offs), silent = TRUE)
-  beta_new <- matrix(beta_new$coefficients, nrow=p)
-  
-  niter <- 1
-  tol <- 1
-  while (tol > toler & niter < maxit) {
-    beta_old <- beta_new
-    resume2 <- score(D=datas,W=W, rho=rho, beta = beta_old, ni=n)
-    kchol <- base::chol2inv(chol(resume2[1:p, 2:(p + 1)]))
-    beta_new <- beta_old + crossprod(kchol, resume2[, 1])
-    tol <- max(abs((beta_new - beta_old)/beta_old))
-    niter <- niter + 1
-  }
-  
-  rho_f <- optim(par=rho,qllp, beta=beta_new, W=W, D=datas, n=n,
-                 method="L-BFGS-B", lower=-0.99,upper=0.99, hessian = TRUE)
-  rho_new <- rho_f$par
-  varrho <- -rho_f$hessian[1,1]
-  tolrho <- abs(rho_new-rho)
-  niterrho <- niterrho + 1
-  Result <- c(Result, rho_new)
+    if(!inherits(beta_new, "try-error")){
+      beta_new <- matrix(beta_new$coefficients, nrow=p)
+    }else if(!inherits(modTemp, "try-error")){
+      beta_new <- matrix(modTemp$coefficients[1:p], nrow=p)
+    }else{
+      beta_new <- matrix(0, ncol=p)
+    }
+    
+    niter <- 1
+    tol <- 1
+    beta_newTemp <- beta_new
+    while (tol > toler & niter < maxit) {
+      beta_old <- beta_new
+      resume2 <- score(D=datas,W=W, rho=rho, beta = beta_old, ni=n)
+      kchol <- try(base::chol2inv(chol(resume2[1:p, 2:(p + 1)])),
+                   silent=TRUE)
+      if(inherits(kchol, "try-error")){
+        beta_new <- beta_newTemp
+        beta_old <- beta_newTemp
+      }else{
+        beta_new <- beta_old + crossprod(kchol, resume2[, 1]) 
+      }
+      tol <- max(abs((beta_new - beta_old)/beta_old))
+      niter <- niter + 1
+    }
+    
+    rho_f <- optim(par=rho,qllp, beta=beta_new, W=W, D=datas, n=n,
+                   method="L-BFGS-B", lower=-0.99,upper=0.99, hessian = TRUE)
+    print(cbind(rho_f$par, rho_f$value))
+    rho_new <- rho_f$par
+    varrho <- -rho_f$hessian[1,1]
+    tolrho <- abs(rho_new-rho)
+    niterrho <- niterrho + 1
+    Result <- c(Result, rho_new)
   }
   ## plot(as.ts(Result))
   ##print(rho_f)
@@ -231,7 +262,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   eta <- solve(A)%*% X %*% beta_new + offs
   mu <- family$linkinv(eta[,1])
   phiis <- diag(solve(tcrossprod(A)))
-  vari <- sqrt(family$variance(mu)/(datas[, p + 3]*phiis))
+  vari <- sqrt(family$variance(mu)*phiis/(datas[, p + 3]))
   phi <- sum(((y-mu)/sqrt(vari))^2)/(n-p)
   I0 <- solve(resume2[1:p, 2:(p + 1)])
   I1 <- resume2[1:p, (p + 2):(2 * p + 1)]
@@ -245,7 +276,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   
   w <- sqrt(weights * family2$mu.eta(eta[,1])^2/family2$variance(mu))
   Xw <- matrix(w, nrow(X), ncol(X)) * (solve(A)%*%X)
-  CIC <- sum(diag((crossprod(Xw)*phi) %*% I0))
+  CIC <- sum(diag((crossprod(Xw)/phi) %*% vcovs))
   RJC <- sqrt((1 - sum(diag(RJC))/(p * phi))^2 + (1 - sum(diag(RJC %*% 
                                                                  RJC))/(p * phi^2))^2)
   logLik <- -qllp(rho=rho, W=W, D=datas, beta=beta_new, n=n)

@@ -15,7 +15,7 @@ GEESAR(
   W,
   start = NULL,
   toler = 1e-04,
-  maxit = 200,
+  maxit = 20,
   trace = FALSE
 )
 }
