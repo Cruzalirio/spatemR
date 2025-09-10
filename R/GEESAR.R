@@ -234,6 +234,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
       if(inherits(kchol, "try-error")){
         beta_new <- beta_newTemp
         beta_old <- beta_newTemp
+        niter <- maxit
       }else{
         beta_new <- beta_old + crossprod(kchol, resume2[, 1]) 
       }
@@ -243,7 +244,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
     
     rho_f <- optim(par=rho,qllp, beta=beta_new, W=W, D=datas, n=n,
                    method="L-BFGS-B", lower=-0.99,upper=0.99, hessian = TRUE)
-    print(cbind(rho_f$par, rho_f$value))
+    #print(cbind(rho_f$par, rho_f$value))
     rho_new <- rho_f$par
     varrho <- -rho_f$hessian[1,1]
     tolrho <- abs(rho_new-rho)
