@@ -265,7 +265,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   mu <- family$linkinv(eta[,1])
   phiis <- diag(solve(crossprod(A)))
   vari <- sqrt(family$variance(mu)*phiis/(datas[, p + 3]))
-  phi <- sum(((y-mu)/sqrt(vari))^2)/(n-p)
+  phi <- sum(((y-mu)/vari)^2)/(n-p)
   I0 <- solve(resume2[1:p, 2:(p + 1)])
   I1 <- resume2[1:p, (p + 2):(2 * p + 1)]
   RJC <- crossprod(I0, I1)
