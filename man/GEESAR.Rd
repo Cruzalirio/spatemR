@@ -16,7 +16,8 @@ GEESAR(
   start = NULL,
   toler = 1e-04,
   maxit = 200,
-  trace = FALSE
+  trace = FALSE,
+  eps = 1e-06
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ GEESAR(
 \item{maxit}{Maximum number of iterations for model fitting. Default is `50`.}
 
 \item{trace}{Logical; if `TRUE`, prints iteration details. Default is `FALSE`.}
+
+\item{eps}{Minimun value for variance diference of zero}
 }
 \value{
 A list of class `"GEESAR"` containing:

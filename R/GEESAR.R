@@ -13,6 +13,7 @@
 #' @param toler Convergence tolerance for iterative optimization. Default is `1e-05`.
 #' @param maxit Maximum number of iterations for model fitting. Default is `50`.
 #' @param trace Logical; if `TRUE`, prints iteration details. Default is `FALSE`.
+#' @param eps Minimun value for variance diference of zero
 #'
 #' @details
 #' The function estimates a spatially autoregressive GEE model by iteratively updating the spatial dependence 
@@ -63,7 +64,7 @@
 
 GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
                     start = NULL, 
-                    toler = 1e-04, maxit = 200, trace = FALSE) {
+                    toler = 1e-04, maxit = 200, trace = FALSE, eps=1e-6) {
   mf <- stats::model.frame(formula, data=data)
   y <- base::as.matrix(model.response(mf))
   if (is(family, "function")) 
@@ -117,7 +118,11 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   if (family$family == "gaussian") 
     qll <- function(weights, y, mu) -weights * (y - mu)^2/2
   if (family$family == "binomial") 
-    qll <- function(weights, y, mu) weights * (y * log(mu) + (1 - y) * log(1 - mu))
+    qll <- qll <- function(weights, y, mu){
+      eps <- eps
+      mu <- pmin(pmax(mu, eps), 1-eps)
+      weights * (y * log(mu) + (1 - y) * log(1 - mu))
+    }
   if (family$family == "poisson") 
     qll <- function(weights, y, mu) weights * (y * log(mu) - mu)
   if (family$family == "Gamma") 
@@ -152,34 +157,23 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
     qll <- function(weights, y, mu) family$dev.resids(y, mu, weights)
   
   qllp <- function(rho, beta, W, D,n){
-    A <- diag(n) - rho*W
-    Xi <-solve(A)%*%matrix(D[, 1:p], ncol = p)
+    A <- Matrix::Diagonal(n) - rho*W
+    Xi <-Matrix::solve(A + Matrix::Diagonal(n, eps),Matrix::Matrix(D[, 1:p]))
     yi <- D[, p + 1]
     ni <- nrow(Xi)
     etai <- Xi %*% beta + D[, p + 2]
     mui <- family$linkinv(etai[,1])
+    if(family$family=="binomial"){
+      mui <- pmin(pmax(mui,eps),1-eps)
+    }
     QL <- sum(qll(weights=D[,p+3], y=D[,p+1], mu=mui))
     return(-QL)
-  }
-  score <- function(D, W, rho, beta, ni) {
-    A <- diag(ni) - rho*W
-    Xi <- solve(A)%*%matrix(D[, 1:p], ncol = p)
-    yi <- D[, p + 1]
-    ni <- nrow(Xi)
-    etai <- Xi %*% beta + D[, p + 2]
-    mui <- family$linkinv(etai[,1])
-    wi <- sqrt(family$variance(mui)/D[, p + 3])
-    Xiw <- diag(family$mu.eta(etai[,1]))%*%Xi 
-    Vi2 <- diag(1/wi)%*%crossprod(A) %*% diag(1/wi)
-    Xiw2 <- crossprod(Vi2, Xiw)
-    cbind(crossprod(Xiw2, (yi - mui)), crossprod(Xiw2,Xiw), 
-          crossprod(Xiw2, (tcrossprod(yi - mui)) %*% Xiw2))
   }
   
   if(family2$family=="ptfamily" &  !all(y>0)){
     stop("Only y>1 are allowed in ptfamily!!", call. = FALSE)
   }
-  
+  if (family$family=="poisson"){
   modTemp <- try(sphet::spreg(family$linkfun(y+1)~datas[, 1:p]-1,
                               listw = W, model = "lag"),
                  silent = TRUE)
@@ -187,10 +181,19 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
     rho <- modTemp$coefficients[p+1]  
   }else{
     rho <- 0
+  }}else if(family$family=="binomial"){
+    glm_temp <- glm.fit(x = X,y = y,family = binomial(),
+                        weights = weights,offset = offs)
+    mu_glm <- glm_temp$fitted.values
+    res <- y - mu_glm
+    rho <- as.numeric( t(res) %*% (W %*% res) / (t(res) %*% res) )
+    rho <- max(min(rho, 0.95), -0.95)
+  }else{
+    rho <- 0
   }
-  A <- diag(n) - rho*W
+  A <- Matrix::Diagonal(n) - rho*W
   
-  beta_new <- try(glm.fit(y = y, x = solve(A)%*%X, family = family2, 
+  beta_new <- try(glm.fit(y = y, x = Matrix::solve(A + Matrix::Diagonal(n, eps),X), family = family2, 
                           weights = weights, offset = offs), silent = TRUE)
   if(!inherits(beta_new, "try-error")){
     beta_new <- matrix(beta_new$coefficients, nrow=p)
@@ -212,91 +215,124 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   Result <- rho_new
   while(tolrho>toler & niterrho < maxit){
     rho <- rho_new
-    A = diag(n) - rho*W
+    A = Matrix::Diagonal(n) - rho*W
     
-    beta_new <- try(glm.fit(y = y, x = solve(A)%*%X, family = family2, 
-                            weights = weights, offset = offs), silent = TRUE)
-    if(!inherits(beta_new, "try-error")){
-      beta_new <- matrix(beta_new$coefficients, nrow=p)
-    }else if(!inherits(modTemp, "try-error")){
-      beta_new <- matrix(modTemp$coefficients[1:p], nrow=p)
-    }else{
-      beta_new <- matrix(0, ncol=p)
-    }
-    
-    niter <- 1
+    # beta_new <- try(glm.fit(y = y, x = Matrix::solve(A + Matrix::Diagonal(n, eps), X), family = family2, 
+    #                         weights = weights, offset = offs), silent = TRUE)
+    # if(!inherits(beta_new, "try-error")){
+    #   beta_new <- matrix(beta_new$coefficients, nrow=p)
+    # }else if(!inherits(modTemp, "try-error")){
+    #   beta_new <- matrix(modTemp$coefficients[1:p], nrow=p)
+    # }else{
+    #   beta_new <- matrix(0, ncol=p)
+    # }
     tol <- 1
-    beta_newTemp <- beta_new
-    while (tol > toler & niter < maxit) {
+    niter <- 1
+    #beta_new <- beta_old
+    
+    while(tol > toler & niter < maxit){
+      
       beta_old <- beta_new
-      resume2 <- score(D=datas,W=W, rho=rho, beta = beta_old, ni=n)
-      kchol <- try(base::chol2inv(chol(resume2[1:p, 2:(p + 1)])),
-                   silent=TRUE)
-      if(inherits(kchol, "try-error")){
-        beta_new <- beta_newTemp
-        beta_old <- beta_newTemp
-        niter <- maxit
-      }else{
-        beta_new <- beta_old + crossprod(kchol, resume2[, 1]) 
-      }
-      tol <- max(abs((beta_new - beta_old)/beta_old))
+      
+      Xi <- Matrix::solve(A + Matrix::Diagonal(n,eps), X)
+      
+      eta <- Xi %*% beta_old + offs
+      mu  <- family$linkinv(eta[,1])
+      
+      gprime <- family$mu.eta(eta[,1])
+      varmu  <- family$variance(mu)
+      
+      wgee <- weights * gprime^2 / varmu
+      
+      H <- Matrix::crossprod(Xi, wgee * Xi)
+      
+      U <- Matrix::crossprod(Xi, weights* gprime/varmu * (y - mu))
+      
+      beta_new <- beta_old + Matrix::solve(H, U)
+      
+      tol <- max(abs((beta_new - beta_old)/(beta_old + 1e-8)))
+      
       niter <- niter + 1
     }
     
     rho_f <- optim(par=rho,qllp, beta=beta_new, W=W, D=datas, n=n,
                    method="L-BFGS-B", lower=-0.99,upper=0.99, hessian = TRUE)
-    #print(cbind(rho_f$par, rho_f$value))
+    
     rho_new <- rho_f$par
     varrho <- -rho_f$hessian[1,1]
     tolrho <- abs(rho_new-rho)
+    
+    # cat("Rho es ---> ::", rho_new," y beta es de nuevo --> ", round(as.matrix(beta_new),5),"\n Con una tol:::" , 
+    #     tolrho," y un valor de qllp de -->", rho_f$value, "\n")
     niterrho <- niterrho + 1
     Result <- c(Result, rho_new)
   }
   ## plot(as.ts(Result))
-  ##print(rho_f)
+  print(rho_f)
   rho <- rho_new
-  resume2 <- score(D=datas,W=W, rho=rho, beta = beta_new, ni=n)
-  A = diag(n) - rho*W
-  rownames(beta_new) <- colnames(X)
-  colnames(beta_new) <- ""
-  if (niterrho == maxit) 
-    warning("Iteration limit exceeded!!\n", call. = FALSE)
-  eta <- solve(A)%*% X %*% beta_new + offs
-  mu <- family$linkinv(eta[,1])
-  phiis <- diag(solve(crossprod(A)))
-  vari <- sqrt(family$variance(mu)*phiis/(datas[, p + 3]))
-  phi <- sum(((y-mu)/vari)^2)/(n-p)
-  I0 <- solve(resume2[1:p, 2:(p + 1)])
-  I1 <- resume2[1:p, (p + 2):(2 * p + 1)]
-  RJC <- crossprod(I0, I1)
-  vcovs <- RJC %*% I0
-  if(family$family =="binomial" & all(weights==1)){
+  # Matriz A
+  A <- Matrix::Diagonal(n) - rho * W
+  
+  # Calcula eta y mu
+  Xi <- Matrix::solve(A + Matrix::Diagonal(n, eps), X)
+  eta <- Xi %*% beta_new + offs
+  mu  <- family$linkinv(eta[,1])
+  
+  # Derivadas del link y varianzas
+  gprime <- family$mu.eta(eta[,1])
+  varmu  <- family$variance(mu)
+  
+  # Pesos tipo GEE
+  wgee <- weights * gprime^2 / varmu
+  
+  # Información de Fisher aproximada (H) y score (U)
+  H <- Matrix::crossprod(Xi, wgee * Xi)
+  U <- Matrix::crossprod(Xi, weights * gprime / varmu * (y - mu))
+  
+  # Varianza sandwich directamente
+  I0 <- Matrix::solve(H)
+  vcovs <- I0 %*% (U %*% Matrix::t(U)) %*% I0  # sandwich robusta
+  
+  # Ajuste especial para binomial con weights = 1
+  if(family$family == "binomial" & all(weights == 1)){
     vcovs <- I0
   }
+  
   rownames(vcovs) <- colnames(X)
   colnames(vcovs) <- colnames(X)
   
-  w <- sqrt(weights * family2$mu.eta(eta[,1])^2/family2$variance(mu))
-  Xw <- matrix(w, nrow(X), ncol(X)) * (solve(A)%*%X)
-  CIC <- sum(diag((crossprod(Xw)/phi) %*% vcovs))
-  RJC <- sqrt((1 - sum(diag(RJC))/(p * phi))^2 + (1 - sum(diag(RJC %*% 
-                                                                 RJC))/(p * phi^2))^2)
-  logLik <- -qllp(rho=rho, W=W, D=datas, beta=beta_new, n=n)
-  estfun <- as.matrix(resume2[, 1])
+  # Cálculo de CIC
+  w <- sqrt(weights * gprime^2 / varmu)
+  Xw <- sweep(Xi, 1, w, "*")
+  phi <- sum((y - mu)^2 / (varmu / weights)) / (n - p)
+  CIC <- sum(Matrix::diag(Matrix::crossprod(Xw) %*% vcovs)) / phi
+  
+  # RJC
+  d1 <- sum(Matrix::diag(vcovs %*% H))
+  d2 <- sum(Matrix::diag((vcovs %*% H) %*% (vcovs %*% H)))
+  RJC <- sqrt((1 - d1/(p*phi))^2 + (1 - d2/(p*phi^2))^2)
+  
+  # Varianza de rho
+  inv_var_rho <- var_rho_inv(A, W, X, beta_new, family, weights, phi)
+  var_rho <- 1 / inv_var_rho
+  
+  # Log-likelihood (quasi)
+  logLik <- -qllp(rho = rho, W = W, D = datas, beta = beta_new, n = n)
+  estfun <- Matrix::crossprod(Xw, (y - mu))
   rownames(estfun) <- colnames(X)
   colnames(estfun) <- ""
-  out_ <- list(coefficients = beta_new, rho=rho, varrho=-1/varrho ,fitted.values = mu, 
+  out_ <- list(coefficients = beta_new, rho=rho, varrho=var_rho,fitted.values = mu, 
                linear.predictors = eta,  arrangedata = datas, vcovs=vcovs,
                prior.weights = weights, y = y, formula = formula, call = match.call(), 
-               offset = offs, model = mf, data = data, 
-               score = score, converged = ifelse(niter < maxit, TRUE, FALSE), estfun = estfun, 
+               offset = offs, model = mf, data = data,  
+               converged = ifelse(niterrho < maxit, TRUE, FALSE), estfun = estfun, 
                R = vcovs,naive = I0, family = family,  
-               phi = phi, phiis = phiis, CIC = CIC, RJC = RJC, 
+               phi = phi,CIC = CIC, RJC = RJC, 
                logLik = logLik, deviance = sum(family$dev.resids(y, mu, weights)), 
                df.residual = length(y) - length(beta_new), 
                levels = .getXlevels(attr(mf, "terms"), mf),
                contrasts = attr(X, "contrasts"), 
-               start = start, iter = niter, linear = TRUE)
+               start = start, iter = niterrho, linear = TRUE)
   class(out_) <- "GEESAR"
   return(out_)
 }

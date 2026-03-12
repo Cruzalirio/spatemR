@@ -78,8 +78,8 @@ summary_SAR <- function(object) {
     
     beta_hat <- object$coefficients
     vcov_matrix <- object$naive * object$phi
-    std_error <- sqrt(diag(vcov_matrix))
-    Z_stat <- beta_hat / std_error
+    std_error <- sqrt(Matrix::diag(vcov_matrix))
+    Z_stat <- as.vector(beta_hat / std_error)
     p_values <- 2 * (1 - pnorm(abs(Z_stat)))
     
     rho_hat <- object$rho

@@ -80,10 +80,10 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
   
   # Define the log-likelihood function
   loglik <- function(rholam, W1, W2, Xbeta, Y, var0) {
-    AA <- diag(n) - rholam[1] * W1
-    BB <- diag(n) - rholam[2] * W2
+    AA <- Matrix::Diagonal(n) - rholam[1] * W1
+    BB <- Matrix::Diagonal(n) - rholam[2] * W2
     VV <- BB %*% (AA %*% Y - Xbeta) / sqrt(var0)
-    loglik <- -0.5 * sum(log(var0)) + log(det(AA)) + log(det(BB)) - 
+    loglik <- -0.5 * sum(log(var0)) + log(Matrix::det(AA)) + log(Matrix::det(BB)) - 
       0.5 * sum(VV^2)
     return(-loglik)
   }
@@ -102,8 +102,8 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
   # Iteratively update spatial parameters and GAMLSS model
   while (tolTemp > tol & iter < maxiter) {
     p1 <- p0
-    AA <- diag(n) - p1[1] * W1
-    BB <- diag(n) - p1[2] * W2
+    AA <- Matrix::Diagonal(n) - p1[1] * W1
+    BB <- Matrix::Diagonal(n) - p1[2] * W2
     Ytemp <- as.matrix(BB %*% AA %*% Y)
     Xtemp <- as.matrix(BB %*% model.matrix(m0, what = "mu"))
     Ztemp <- model.matrix(m0, what = "sigma")
@@ -115,7 +115,7 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
     # Fit updated GAMLSS model with transformed data (dependent and independent)
     m1 <- gamlss::gamlss(Ytemp ~ Xtemp - 1, ~Ztemp - 1, family = NO())
     var1 <- predict(m1, what = "sigma", type = "response")^2
-    Xbeta <- solve(BB)%*%predict(m1, what = "mu", type = "response")
+    Xbeta <- Matrix::solve(BB,predict(m1, what = "mu", type = "response"))
     
     # Optimize again with updated variance
     p0 <- optim(par = c(0, 0), fn = loglik, method = "L-BFGS-B", W1 = W1, W2 = W2, 
@@ -163,19 +163,20 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
   
   X <- model.matrix(m0, what = "mu")
   beta <- stats::coef(m0, "mu")
-  Omega <- diag(predict(m0, what = "sigma")^2)
+  Omega <- Matrix::diag(predict(m0, what = "sigma")^2)
   rho <- p0[1]
   lambda <- p0[2]
-  AA <- diag(n) - rho * W1
-  BB <- diag(n) - lambda * W2
-  varU <- solve(BB) %*% Omega %*% t(solve(BB))
+  AA <- Matrix::Diagonal(n) - rho * W1
+  BB <- Matrix::Diagonal(n) - lambda * W2
+  BBInv <- Matrix::solve(BB)
+  varU <- BBInv%*%Omega %*% Matrix::t(BBInv)
   
-  inv_cov <- solve(lambda^2 * W2 %*% varU %*% t(W2) +
-                     lambda *  Omega %*% t(solve(BB)) %*% t(W2) +
-                     lambda * W2 %*% solve(BB) %*% Omega +
+  inv_cov <- Matrix::solve(lambda^2 * W2 %*% varU %*% Matrix::t(W2) +
+                     lambda *  Omega %*% Matrix::t(BBInv) %*% Matrix::t(W2) +
+                     lambda * W2 %*% BBInv %*% Omega +
                      Omega)
   y_true <- Y
-  y_signal <- (lambda* W2 %*% varU + solve(BB) %*% Omega) %*% inv_cov %*% 
+  y_signal <- (lambda* W2 %*% varU + BBInv %*% Omega) %*% inv_cov %*% 
     (AA%*%y_true -  X %*% beta)
   
   y_trend <- rho * W1 %*% y_true + X %*% beta
