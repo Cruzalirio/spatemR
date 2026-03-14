@@ -263,6 +263,11 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   
   wgee <- weights * gprime^2 / varmu
   
+  w <- sqrt(weights * gprime^2 / varmu)
+  Xw <- sweep(Xi, 1, w, "*")
+  
+  phi <- sum((y - mu)^2 / (varmu / weights)) / (n - p)
+  
   # Información de Fisher aproximada (H) y score (U)
   H <- Matrix::crossprod(Xi, wgee * Xi)
   U <- Matrix::crossprod(Xi, weights * gprime / varmu * (y - mu))
@@ -282,10 +287,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   colnames(vcovs) <- colnames(X)
   
   # Cálculo de CIC
-  w <- sqrt(weights * gprime^2 / varmu)
-  Xw <- sweep(Xi, 1, w, "*")
-  phi <- sum((y - mu)^2 / (varmu / weights)) / (n - p)
-  CIC <- sum(Matrix::diag(I0 %*% B))
+  CIC <- sum(Matrix::diag(I0 %*% B))/phi
   
   # RJC
   # Log-likelihood (quasi)
@@ -304,11 +306,11 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   colnames(estfun) <- ""
   out_ <- list(coefficients = beta_new, rho=rho, varrho=var_rho, 
                varrhoSan=var_rho_san,    fitted.values = mu, 
-               linear.predictors = eta,  arrangedata = datas, vcovs=vcovs,
+               linear.predictors = eta,  arrangedata = datas, vcovs=vcovs*phi,
                prior.weights = weights, y = y, formula = formula, call = match.call(), 
                offset = offs, model = mf, data = data,  
                converged = ifelse(niterrho < maxit, TRUE, FALSE), estfun = estfun, 
-               R = vcovs,naive = I0, family = family,  
+               R = vcovs,naive = I0*phi, family = family,  
                phi = phi,CIC = CIC, RJC = RJC, 
                logLik = logLik, deviance = sum(family$dev.resids(y, mu, weights)), 
                df.residual = length(y) - length(beta_new), 
