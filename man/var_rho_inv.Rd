@@ -4,7 +4,7 @@
 \alias{var_rho_inv}
 \title{Compute the Inverse Variance of the Spatial Autoregressive Parameter (rho)}
 \usage{
-var_rho_inv(A, W, X, beta, family, weights = NULL, phi = 1)
+var_rho_inv(A, W, X, beta, family, offs = NULL, weights = NULL, phi = 1)
 }
 \arguments{
 \item{A}{Matrix. The spatial transformation matrix \eqn{\mathbf{A} = \mathbf{I} - \rho \mathbf{W}}, 
@@ -18,11 +18,11 @@ typically of class `Matrix`.}
 
 \item{family}{GLM family object. The response distribution family (e.g., `gaussian()`, `poisson()`, `binomial()`, `Gamma()`, `Negative Binomial()`).}
 
+\item{offs}{Numeric vector. Optional offset vector, length \eqn{n}. Default is 0.}
+
 \item{weights}{Numeric vector. Observation weights \eqn{m_i} (e.g., number of trials for binomial data), length \eqn{n}.}
 
 \item{phi}{Numeric. Dispersion parameter, used for `gaussian`, `Gamma`, or `Negative Binomial` families. Default is 1.}
-
-\item{offs}{Numeric vector. Optional offset vector, length \eqn{n}. Default is 0.}
 }
 \value{
 Numeric. The inverse of the variance of \eqn{\hat{\rho}} (\eqn{\operatorname{Var}(\hat{\rho})^{-1}}).

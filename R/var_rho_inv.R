@@ -43,11 +43,11 @@
 #'
 #' @export
 
-var_rho_inv <- function(A, W, X, beta, family, weights=NULL, phi=1){
+var_rho_inv <- function(A, W, X, beta, family, offs=NULL, weights=NULL, phi=1){
   n <- nrow(X)
   Ainv <- solve(A)
   tildeX <- Ainv %*% X
-  eta <- as.vector(tildeX %*% beta)
+  eta <- as.vector(tildeX %*% beta + offs)
   mu <- family$linkinv(eta)
   g1 <- family$mu.eta(eta)
   
