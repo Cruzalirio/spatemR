@@ -251,7 +251,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
     niterrho <- niterrho + 1
     Result <- c(Result, rho_new)
   }
-  print(rho_f)
+  #print(rho_f)
   rho <- rho_new
   A <- Matrix::Diagonal(n) - rho * W
   Xi <- Matrix::solve(A + Matrix::Diagonal(n, eps), X)
@@ -266,11 +266,13 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   # Información de Fisher aproximada (H) y score (U)
   H <- Matrix::crossprod(Xi, wgee * Xi)
   U <- Matrix::crossprod(Xi, weights * gprime / varmu * (y - mu))
+  Ui <- Xi * as.vector(weights * gprime / varmu * (y - mu))
   
   # Varianza sandwich directamente
   I0 <- Matrix::solve(H)
-  vcovs <- I0 %*% (U %*% Matrix::t(U)) %*% I0  # sandwich robusta
-  
+  B <- crossprod(Ui)
+  vcovs <- I0 %*% B %*% I0
+
   # Ajuste especial para binomial con weights = 1
   if(family$family == "binomial" & all(weights == 1)){
     vcovs <- I0
@@ -283,23 +285,25 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   w <- sqrt(weights * gprime^2 / varmu)
   Xw <- sweep(Xi, 1, w, "*")
   phi <- sum((y - mu)^2 / (varmu / weights)) / (n - p)
-  CIC <- sum(Matrix::diag(Matrix::crossprod(Xw) %*% vcovs)) / phi
+  CIC <- sum(Matrix::diag(I0 %*% B))
   
   # RJC
-  d1 <- sum(Matrix::diag(vcovs %*% H))
-  d2 <- sum(Matrix::diag((vcovs %*% H) %*% (vcovs %*% H)))
-  RJC <- sqrt((1 - d1/p)^2 + (1 - d2/p)^2)
-  
-  # Varianza de rho
-  inv_var_rho <- var_rho_inv(A, W, X, beta_new, family, weights, phi)
-  var_rho <- 1 / inv_var_rho
-  
   # Log-likelihood (quasi)
   logLik <- -qllp(rho = rho, W = W, D = datas, beta = beta_new, n = n)
+  
+  RJC <- 2*CIC+2*logLik
+  
+  # Varianza de rho
+  inv_var_rho <- var_rho_inv(A, W, X, beta_new, family,y, weights, phi)
+  var_rho <- 1 / inv_var_rho[1]
+  var_rho_san <- inv_var_rho[2]
+  
+  
   estfun <- Matrix::crossprod(Xw, (y - mu))
   rownames(estfun) <- colnames(X)
   colnames(estfun) <- ""
-  out_ <- list(coefficients = beta_new, rho=rho, varrho=var_rho,fitted.values = mu, 
+  out_ <- list(coefficients = beta_new, rho=rho, varrho=var_rho, 
+               varrhoSan=var_rho_san,    fitted.values = mu, 
                linear.predictors = eta,  arrangedata = datas, vcovs=vcovs,
                prior.weights = weights, y = y, formula = formula, call = match.call(), 
                offset = offs, model = mf, data = data,  

@@ -4,7 +4,7 @@
 \alias{var_rho_inv}
 \title{Compute the Inverse Variance of the Spatial Autoregressive Parameter (rho)}
 \usage{
-var_rho_inv(A, W, X, beta, family, offs = NULL, weights = NULL, phi = 1)
+var_rho_inv(A, W, X, beta, family, y, offs = NULL, weights = NULL, phi = 1)
 }
 \arguments{
 \item{A}{Matrix. The spatial transformation matrix \eqn{\mathbf{A} = \mathbf{I} - \rho \mathbf{W}}, 
@@ -17,6 +17,8 @@ typically of class `Matrix`.}
 \item{beta}{Numeric vector. Current estimates of regression coefficients \eqn{\pmb{\beta}}, length \eqn{p}.}
 
 \item{family}{GLM family object. The response distribution family (e.g., `gaussian()`, `poisson()`, `binomial()`, `Gamma()`, `Negative Binomial()`).}
+
+\item{y}{response variable}
 
 \item{offs}{Numeric vector. Optional offset vector, length \eqn{n}. Default is 0.}
 

@@ -14,6 +14,7 @@
 #' @param weights Numeric vector. Observation weights \eqn{m_i} (e.g., number of trials for binomial data), length \eqn{n}.
 #' @param phi Numeric. Dispersion parameter, used for `gaussian`, `Gamma`, or `Negative Binomial` families. Default is 1.
 #' @param offs Numeric vector. Optional offset vector, length \eqn{n}. Default is 0.
+#' @param y response variable
 #'
 #' @return Numeric. The inverse of the variance of \eqn{\hat{\rho}} (\eqn{\operatorname{Var}(\hat{\rho})^{-1}}).
 #'
@@ -43,34 +44,46 @@
 #'
 #' @export
 
-var_rho_inv <- function(A, W, X, beta, family, offs=NULL, weights=NULL, phi=1){
+var_rho_inv <- function(A, W, X, beta, family, y, offs=NULL, weights=NULL, phi=1){
   n <- nrow(X)
-  Ainv <- solve(A)
+  p <- ncol(X)
+  Ainv <- Matrix::solve(A)
   tildeX <- Ainv %*% X
   eta <- as.vector(tildeX %*% beta + offs)
   mu <- family$linkinv(eta)
   g1 <- family$mu.eta(eta)
-  
-  # primera derivada
-  deta <- as.vector(Ainv %*% W %*% tildeX)
+  deta <- Matrix::rowSums(Ainv %*% W %*% tildeX * Matrix::Matrix(as.vector(beta), ncol=p, nrow=n))
   dmu <- g1 * deta
   
+  if(is.null(weights)) weights <- rep(1,n)
+  
+  # derivadas segundas de la quasi-likelihood
   fam <- family$family
-  inv_var <- 0
+  d2ell <- rep(0,n)
+  d1ell <- rep(0,n)
   
   if(fam=="gaussian"){
-    inv_var <- sum(dmu^2)/phi
-  } else if(fam=="poisson"|| fam=="ptfamily"){
-    inv_var <- sum(dmu^2 / mu)
+    d2ell <- -weights / phi
+    d1ell <- weights * (y - mu) / phi
+  } else if(fam=="poisson" || fam=="ptfamily"){
+    d2ell <- -weights / mu
+    d1ell <- weights * (y - mu) / mu
   } else if(fam=="binomial"){
     m <- weights
-    if(is.null(m)) stop("Weights must be provided for binomial")
-    inv_var <- sum(dmu^2 * (-m/mu^2 + (m-1)/(1-mu)^2))
+    d2ell <- weights * (-m/mu^2 + (m-1)/(1-mu)^2)
+    d1ell <- weights * (y - mu) / (mu*(1-mu))  # aproximación
   } else if(fam=="Gamma"){
-    inv_var <- sum(dmu^2 * (1/mu^2 - 1/(mu*phi)))
+    d2ell <- -weights * (1/mu^2 - 1/(mu*phi))
+    d1ell <- weights * (y - mu)/mu^2
   } else if(fam=="Negative Binomial"){
-    inv_var <- sum(dmu^2 / (mu + mu^2/phi))
+    d2ell <- -weights / (mu + mu^2/phi)
+    d1ell <- weights * (y - mu) / (mu + mu^2/phi)
   } else stop("Family not implemented")
   
-  return(inv_var)
+  # sandwich
+  J <- sum((dmu^2) * (-d2ell))  # información esperada
+  U <- d1ell * dmu
+  var_rho_sandwich <- (1/J) * sum(U^2) * (1/J)
+  
+  return(c(J,var_rho_sandwich))
 }
