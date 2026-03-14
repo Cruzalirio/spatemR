@@ -42,46 +42,56 @@
 #' }
 #'
 #' @export
-var_rho_inv <- function(A,W,X,beta,family,weights,phi=1,offs=0){
+
+var_rho_inv <- function(A, W, X, beta, family, weights = NULL, phi = 1, offs = 0) {
+  # Número de observaciones
   n <- nrow(X)
-  Xi <- Matrix::solve(A, X)
-  eta <- Xi %*% beta + offs
-  eta <- eta[,1]
-  mu  <- family$linkinv(eta)
   
+  # X ajustada por A
+  Xi <- Matrix::solve(A, X)
+  
+  # Linear predictor
+  eta <- as.vector(Xi %*% beta + offs)
+  
+  # Media
+  mu <- family$linkinv(eta)
+  
+  # Primera derivada de la link
   g1 <- family$mu.eta(eta)
   
-  # segunda derivada numerica de la función link
+  # Derivadas de eta respecto rho
+  deta <- as.vector(Matrix::solve(A, W %*% Xi %*% beta))
+  d2eta <- as.vector(2 * Matrix::solve(A, W %*% Matrix::solve(A, W %*% Xi %*% beta)))
+  
+  # Derivadas de mu respecto rho
+  dmu <- g1 * deta
+  # Segunda derivada aproximada de g
   eps <- 1e-6
-  g2 <- (family$mu.eta(eta+eps) - family$mu.eta(eta-eps))/(2*eps)
-  
-  # derivadas de eta
-  deta  <- Matrix::solve(A, W %*% Xi %*% beta)
-  d2eta <- 2 * Matrix::solve(A, W %*% Matrix::solve(A, W %*% Xi %*% beta))
-  
-  # derivadas de mu
-  dmu  <- g1 * deta
+  g2 <- (family$mu.eta(eta + eps) - family$mu.eta(eta - eps)) / (2 * eps)
   d2mu <- g2 * deta^2 + g1 * d2eta
   
   fam <- family$family
   
-  if(fam=="gaussian"){
-    inv_var <- sum(dmu^2)/phi
-  } else if(fam=="poisson"|| fam=="ptfamily"){
-    inv_var <- sum(dmu^2/mu) + sum(d2mu*log(mu))
-  } else if(fam=="binomial"){
+  # Inicializar inv_var
+  inv_var <- 0
+  
+  # Variancia inversa según familia, incluyendo phi siempre
+  if(fam == "gaussian") {
+    inv_var <- sum(dmu^2) / phi
+  } else if(fam == "poisson"|| fam =="ptfamily") {
+    inv_var <- sum(dmu^2 / mu) / phi
+  } else if(fam == "binomial") {
     m <- weights
-    inv_var <- sum(dmu^2 * (-m/mu^2 + (m-1)/(1-mu)^2)) +
-      sum(d2mu * (m/mu - (m-1)/(1-mu)))
-  } else if(fam=="Gamma"){
-    inv_var <- sum(dmu^2 * (1/mu^2 - 1/(mu*phi))) +
-      sum(d2mu * (1/mu - 1/phi))
-  } else if(fam=="Negative Binomial"){
-    inv_var <- sum(dmu^2/(mu + mu^2/phi)) +
-      sum(d2mu * (mu/(mu + phi)))
+    if(is.null(m)) stop("weights (m) must be provided for binomial")
+    inv_var <- sum(dmu^2 * (-m / mu^2 + (m - 1) / (1 - mu)^2)) / phi
+  } else if(fam == "Gamma") {
+    inv_var <- sum(dmu^2 * (1 / mu^2 - 1 / (mu * phi))) / phi
+  } else if(fam == "Negative Binomial") {
+    inv_var <- sum(dmu^2 / (mu + mu^2 / phi)) / phi
   } else {
     stop("Family not implemented")
   }
   
+  # Devolver -inv_var según formula de Var^-1
   return(-inv_var)
 }

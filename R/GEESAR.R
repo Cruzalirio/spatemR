@@ -207,28 +207,14 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   rho_new <- rho_f$par
   tolrho <- 1
   niterrho <- 1
-  
-  # rrr = c()
-  # for(rho in seq(-0.9,0.9,0.01)) rrr = c(rrr, qllp(rho=rho, W=W, D=datas, beta=beta_new, n=n))
-  # plot(seq(-0.9,0.9, 0.01),-rrr, type="l")
-  # 
+ 
   Result <- rho_new
   while(tolrho>toler & niterrho < maxit){
     rho <- rho_new
     A = Matrix::Diagonal(n) - rho*W
     
-    # beta_new <- try(glm.fit(y = y, x = Matrix::solve(A + Matrix::Diagonal(n, eps), X), family = family2, 
-    #                         weights = weights, offset = offs), silent = TRUE)
-    # if(!inherits(beta_new, "try-error")){
-    #   beta_new <- matrix(beta_new$coefficients, nrow=p)
-    # }else if(!inherits(modTemp, "try-error")){
-    #   beta_new <- matrix(modTemp$coefficients[1:p], nrow=p)
-    # }else{
-    #   beta_new <- matrix(0, ncol=p)
-    # }
     tol <- 1
     niter <- 1
-    #beta_new <- beta_old
     
     while(tol > toler & niter < maxit){
       
@@ -262,27 +248,19 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
     varrho <- -rho_f$hessian[1,1]
     tolrho <- abs(rho_new-rho)
     
-    # cat("Rho es ---> ::", rho_new," y beta es de nuevo --> ", round(as.matrix(beta_new),5),"\n Con una tol:::" , 
-    #     tolrho," y un valor de qllp de -->", rho_f$value, "\n")
     niterrho <- niterrho + 1
     Result <- c(Result, rho_new)
   }
-  ## plot(as.ts(Result))
   print(rho_f)
   rho <- rho_new
-  # Matriz A
   A <- Matrix::Diagonal(n) - rho * W
-  
-  # Calcula eta y mu
   Xi <- Matrix::solve(A + Matrix::Diagonal(n, eps), X)
   eta <- Xi %*% beta_new + offs
   mu  <- family$linkinv(eta[,1])
   
-  # Derivadas del link y varianzas
   gprime <- family$mu.eta(eta[,1])
   varmu  <- family$variance(mu)
   
-  # Pesos tipo GEE
   wgee <- weights * gprime^2 / varmu
   
   # Información de Fisher aproximada (H) y score (U)
@@ -310,7 +288,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   # RJC
   d1 <- sum(Matrix::diag(vcovs %*% H))
   d2 <- sum(Matrix::diag((vcovs %*% H) %*% (vcovs %*% H)))
-  RJC <- sqrt((1 - d1/(p*phi))^2 + (1 - d2/(p*phi^2))^2)
+  RJC <- sqrt((1 - d1/p)^2 + (1 - d2/p)^2)
   
   # Varianza de rho
   inv_var_rho <- var_rho_inv(A, W, X, beta_new, family, weights, phi)

@@ -4,7 +4,7 @@
 \alias{var_rho_inv}
 \title{Compute the Inverse Variance of the Spatial Autoregressive Parameter (rho)}
 \usage{
-var_rho_inv(A, W, X, beta, family, weights, phi = 1, offs = 0)
+var_rho_inv(A, W, X, beta, family, weights = NULL, phi = 1, offs = 0)
 }
 \arguments{
 \item{A}{Matrix. The spatial transformation matrix \eqn{\mathbf{A} = \mathbf{I} - \rho \mathbf{W}}, 
