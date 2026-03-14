@@ -291,7 +291,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
   # Log-likelihood (quasi)
   logLik <- -qllp(rho = rho, W = W, D = datas, beta = beta_new, n = n)
   
-  RJC <- 2*CIC+2*logLik
+  RJC <- 2*CIC-2*logLik/phi
   
   # Varianza de rho
   inv_var_rho <- var_rho_inv(A, W, X, beta_new, family,y, weights, phi)

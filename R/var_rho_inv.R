@@ -85,5 +85,5 @@ var_rho_inv <- function(A, W, X, beta, family, y, offs=NULL, weights=NULL, phi=1
   U <- d1ell * dmu
   var_rho_sandwich <- (1/J) * sum(U^2) * (1/J)
   
-  return(c(J,var_rho_sandwich))
+  return(c(J/phi,phi*var_rho_sandwich))
 }
