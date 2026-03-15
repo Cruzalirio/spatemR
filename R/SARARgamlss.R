@@ -72,7 +72,7 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
   m0 <- gamlss::gamlss(formula = formula, sigma.formula = sigma.formula, 
                        data = eval(data_name, parent.frame()), family = NO())
   
-  Y <- matrix(m0$y, ncol = 1)
+  Y <- Matrix::Matrix(m0$y, ncol = 1)
   
   # Initial variance estimation (sigma)
   var0 <- predict(m0, what = "sigma", type = "response")^2
@@ -83,7 +83,10 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
     AA <- Matrix::Diagonal(n) - rholam[1] * W1
     BB <- Matrix::Diagonal(n) - rholam[2] * W2
     VV <- BB %*% (AA %*% Y - Xbeta) / sqrt(var0)
-    loglik <- -0.5 * sum(log(var0)) + log(Matrix::det(AA)) + log(Matrix::det(BB)) - 
+    detAA <- Matrix::determinant(AA, logarithm=TRUE)
+    detBB <- Matrix::determinant(BB, logarithm=TRUE)
+    if(detAA$sign <= 0 | detBB$sign <= 0) return(1e10)
+    loglik <- -0.5 * sum(log(var0)) + detAA$modulus + detBB$modulus- 
       0.5 * sum(VV^2)
     return(-loglik)
   }
@@ -91,7 +94,7 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
   # Optimization step to estimate spatial parameters (rho, lambda) with hessian
   p0 <- optim(par = c(0, 0), fn = loglik, method = "L-BFGS-B", W1 = W1, W2 = W2, 
               Xbeta = Xbeta, Y = Y, var0 = var0, 
-              lower = c(-0.999, -0.999), upper = c(0.999, 0.99), hessian = TRUE)
+              lower = c(-0.999, -0.999), upper = c(0.999, 0.999), hessian = TRUE)
   
   ## Hessian <- p0$hessian  # Extract Hessian matrix
   p0 <- p0$par
@@ -120,7 +123,7 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
     # Optimize again with updated variance
     p0 <- optim(par = c(0, 0), fn = loglik, method = "L-BFGS-B", W1 = W1, W2 = W2, 
                 Xbeta = Xbeta, Y = Y, var0 = var1, 
-                lower = c(-0.999, -0.999), upper = c(0.999, 0.99), hessian = TRUE)
+                lower = c(-0.999, -0.999), upper = c(0.999, 0.999), hessian = TRUE)
     
     Hessian <- p0$hessian  # Extract Hessian matrix
     p0 <- p0$par
