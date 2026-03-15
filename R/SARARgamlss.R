@@ -40,7 +40,7 @@
 #' @export
 #' @importFrom methods is
 #' @importFrom stats .getXlevels binomial dpois fitted gaussian glm.fit 
-#' @importFrom stats make.link model.matrix model.offset model.response coef
+#' @importFrom stats make.link model.matrix model.offset model.response coef model.frame
 #' @importFrom stats optim pchisq pnorm predict printCoefmat rpois update
 #' @import gamlss
 #' @import splines
@@ -63,74 +63,76 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
     W2 <- W1
   }
   
-  # Initialize variables
-  rho0 <- 0
-  lambda <- 0
   n <- nrow(data)
-  
   # Fit the initial GAMLSS model for mean (mu) and variance (sigma)
   m0 <- gamlss::gamlss(formula = formula, sigma.formula = sigma.formula, 
-                       data = eval(data_name, parent.frame()), family = NO())
+                       data = data, family = NO())
   
-  Y <- Matrix::Matrix(m0$y, ncol = 1)
-  
-  # Initial variance estimation (sigma)
-  var0 <- predict(m0, what = "sigma", type = "response")^2
-  Xbeta <- predict(m0, what = "mu", type = "response")
-  
-  # Define the log-likelihood function
-  loglik <- function(rholam, W1, W2, Xbeta, Y, var0) {
-    AA <- Matrix::Diagonal(n) - rholam[1] * W1
-    BB <- Matrix::Diagonal(n) - rholam[2] * W2
-    VV <- BB %*% (AA %*% Y - Xbeta) / sqrt(var0)
-    detAA <- Matrix::determinant(AA, logarithm=TRUE)
-    detBB <- Matrix::determinant(BB, logarithm=TRUE)
-    if(detAA$sign <= 0 | detBB$sign <= 0) return(1e10)
-    loglik <- -0.5 * sum(log(var0)) + detAA$modulus + detBB$modulus- 
-      0.5 * sum(VV^2)
-    return(-loglik)
+  profile_loglik <- function(par, W1, W2, formula, sigma.formula, data){
+    
+    rho <- par[1]
+    lambda <- par[2]
+    
+    n <- nrow(data)
+    
+    AA <- Matrix::Diagonal(n) - rho * W1
+    BB <- Matrix::Diagonal(n) - lambda * W2
+    
+    Y <- model.response(model.frame(formula,data))
+    Ytemp <- as.vector(BB %*% AA %*% Y)
+    
+    mf <- model.frame(formula,data)
+    X <- model.matrix(attr(mf,"terms"),mf)
+    
+    Xtemp <- as.matrix(BB %*% X)
+    
+    datatemp <- data
+    datatemp$Ytemp <- Ytemp
+    
+    m <- gamlss::gamlss(
+      Ytemp ~ Xtemp -1,
+      sigma.formula = sigma.formula,
+      family = NO(),
+      data = datatemp,
+      trace = FALSE
+    )
+    
+    mu <- predict(m,"mu",type="response")
+    sigma2 <- predict(m,"sigma",type="response")^2
+    
+    detAA <- Matrix::determinant(AA,logarithm=TRUE)
+    detBB <- Matrix::determinant(BB,logarithm=TRUE)
+    
+    if(detAA$sign <=0 | detBB$sign <=0) return(1e12)
+    
+    ll <- detAA$modulus + detBB$modulus -
+      0.5*sum(log(sigma2)) -
+      0.5*sum((Ytemp-mu)^2/sigma2)
+    
+    return(-ll)
   }
   
-  # Optimization step to estimate spatial parameters (rho, lambda) with hessian
-  p0 <- optim(par = c(0, 0), fn = loglik, method = "L-BFGS-B", W1 = W1, W2 = W2, 
-              Xbeta = Xbeta, Y = Y, var0 = var0, 
-              lower = c(-0.999, -0.999), upper = c(0.999, 0.999), hessian = TRUE)
+  opt <- optim( c(0,0),  profile_loglik,W1=W1,W2=W2,formula=formula,
+    sigma.formula=sigma.formula,data=data,method="L-BFGS-B",
+    lower=c(-0.999,-0.999), upper=c(0.999,0.999), hessian = TRUE)
   
-  ## Hessian <- p0$hessian  # Extract Hessian matrix
-  p0 <- p0$par
+  Y <- model.response(model.frame(formula,data))
+  p0 <- opt$par
+  AA <- Matrix::Diagonal(n) - p0[1] * W1
+  BB <- Matrix::Diagonal(n) - p0[2] * W2
+  Ytemp <- as.matrix(BB %*% AA %*% Y)
+  Xtemp <- as.matrix(BB %*% model.matrix(m0, what = "mu"))
+  Ztemp <- model.matrix(m0, what = "sigma")
+  Hessian <- opt$hessian  # Extract Hessian matrix
   
-  tolTemp <- 1
-  iter <- 1
+  colnames(Xtemp) <- colnames(model.matrix(m0, what = "mu"))
+  colnames(Ztemp) <- colnames(model.matrix(m0, what = "sigma"))
   
-  # Iteratively update spatial parameters and GAMLSS model
-  while (tolTemp > tol & iter < maxiter) {
-    p1 <- p0
-    AA <- Matrix::Diagonal(n) - p1[1] * W1
-    BB <- Matrix::Diagonal(n) - p1[2] * W2
-    Ytemp <- as.matrix(BB %*% AA %*% Y)
-    Xtemp <- as.matrix(BB %*% model.matrix(m0, what = "mu"))
-    Ztemp <- model.matrix(m0, what = "sigma")
-    
-    colnames(Xtemp) <- colnames(model.matrix(m0, what = "mu"))
-    colnames(Ztemp) <- colnames(model.matrix(m0, what = "sigma"))
-    
-    
-    # Fit updated GAMLSS model with transformed data (dependent and independent)
-    m1 <- gamlss::gamlss(Ytemp ~ Xtemp - 1, ~Ztemp - 1, family = NO())
-    var1 <- predict(m1, what = "sigma", type = "response")^2
-    Xbeta <- Matrix::solve(BB,predict(m1, what = "mu", type = "response"))
-    
-    # Optimize again with updated variance
-    p0 <- optim(par = c(0, 0), fn = loglik, method = "L-BFGS-B", W1 = W1, W2 = W2, 
-                Xbeta = Xbeta, Y = Y, var0 = var1, 
-                lower = c(-0.999, -0.999), upper = c(0.999, 0.999), hessian = TRUE)
-    
-    Hessian <- p0$hessian  # Extract Hessian matrix
-    p0 <- p0$par
-    tolTemp <- sum(abs(p1 - p0))
-    iter <- iter + 1
-  }
   
+  # Fit updated GAMLSS model with transformed data (dependent and independent)
+  m1 <- gamlss::gamlss(Ytemp ~ Xtemp - 1, ~Ztemp - 1, family = NO())
+  var1 <- predict(m1, what = "sigma", type = "response")^2
+  Xbeta <- Matrix::solve(BB,predict(m1, what = "mu", type = "response"))
   # Store updated model parameters
   
   names_to_update <- c("G.deviance", "residuals", "mu.fv", "mu.lp", "mu.wv", 
@@ -191,6 +193,7 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
                spatial=list(spatial=spamu, sdspatial=spacov, type=type),
                gamlssAY=m1,  y_signal = y_signal, y_trend = y_trend,
                y_blup = y_blup, residuals = residuals,y_noise = y_noise)
+  #out1$call <- match.call()
   class(out1) <- "SARARgamlss"
   return(out1)
 }
