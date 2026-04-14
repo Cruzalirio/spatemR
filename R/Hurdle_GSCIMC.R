@@ -1,6 +1,6 @@
-#' Hurdle Model using GEESAR
+#' Hurdle Model using GSCIMC
 #'
-#' This function fits a hurdle model using GEESAR, consisting of:
+#' This function fits a hurdle model using GSCIMC, consisting of:
 #' (1) A logit model for zero vs. non-zero responses.
 #' (2) A truncated Poisson model for positive counts.
 #'
@@ -24,18 +24,18 @@
 #' diag(W) <- 0
 #' rtot <- rowSums(W)
 #' W <- W/ifelse(rtot==0, 0.1, rtot)
-#' model <- Hurdle_GEESAR(y ~ x, data = data.frame(y, x), W = W)
+#' model <- Hurdle_GSCIMC(y ~ x, data = data.frame(y, x), W = W)
 #' summary_SAR(model$logit_model)
 #' summary_SAR(model$poisson_truncated_model)
 #'}
 #'
 #'@export
-Hurdle_GEESAR <- function(formula, data, W, weights = NULL, toler = 1e-05, maxit = 200, trace = FALSE) {
+Hurdle_GSCIMC <- function(formula, data, W, weights = NULL, toler = 1e-05, maxit = 200, trace = FALSE) {
   
   # Modelo logit para y == 0 vs y > 0
   data$y_binary <- as.numeric(data[[all.vars(formula)[1]]] > 0)
   
-  geesar_logit <- GEESAR(
+  GSCIMC_logit <- GSCIMC(
     formula = update(formula, y_binary ~ .),
     family = binomial(link = "logit"),
     data = data,
@@ -49,7 +49,7 @@ Hurdle_GEESAR <- function(formula, data, W, weights = NULL, toler = 1e-05, maxit
   # Modelo Poisson truncado para y > 0
   data_positive <- subset(data, data[[all.vars(formula)[1]]] > 0)
   
-  geesar_poisson_truncated <- GEESAR(
+  GSCIMC_poisson_truncated <- GSCIMC(
     formula = formula,
     family = ptfamily(),
     data = data_positive,
@@ -59,6 +59,6 @@ Hurdle_GEESAR <- function(formula, data, W, weights = NULL, toler = 1e-05, maxit
     maxit = maxit,
     trace = trace )
   
-  return(list(logit_model = geesar_logit, poisson_truncated_model = geesar_poisson_truncated))
+  return(list(logit_model = GSCIMC_logit, poisson_truncated_model = GSCIMC_poisson_truncated))
 }
 

@@ -1,10 +1,10 @@
-#' Custom Summary Function for SARARgamlss and GEESAR Models
+#' Custom Summary Function for SARARgamlss and GSCIMC Models
 #'
-#' This function generates a summary for objects of class 'SARARgamlss' or 'GEESAR'.
+#' This function generates a summary for objects of class 'SARARgamlss' or 'GSCIMC'.
 #' It combines the summary outputs for both models, including GAMLSS model details, 
 #' spatial parameters (rho and lambda), and Wald tests.
 #'
-#' @param object An object of class 'SARARgamlss' or 'GEESAR'.
+#' @param object An object of class 'SARARgamlss' or 'GSCIMC'.
 #' @return A list containing the summary for the specified model class.
 #' @examples
 #' \donttest{
@@ -20,9 +20,9 @@
 #'                             type="SAR")
 #' summary_SAR(result_sarar)
 #' 
-#' # Example for GEESAR model
-#' result_geesar <- GEESAR(formula = CRIME ~ INC + HOVAL, data = COL.OLD, W = W1)
-#' summary_SAR(result_geesar)
+#' # Example for GSCIMC model
+#' result_GSCIMC <- GSCIMC(formula = CRIME ~ INC + HOVAL, data = COL.OLD, W = W1)
+#' summary_SAR(result_GSCIMC)
 #' }
 #' @export
 
@@ -73,8 +73,8 @@ summary_SAR <- function(object) {
     return(summary_obj)
   }
   
-  # Verificar si el objeto es de clase 'GEESAR'
-  else if (inherits(object, "GEESAR")) {
+  # Verificar si el objeto es de clase 'GSCIMC'
+  else if (inherits(object, "GSCIMC")) {
     
     beta_hat <- object$coefficients
     vcov_matrix <- object$vcovs
@@ -106,13 +106,13 @@ summary_SAR <- function(object) {
       RJC = object$RJC
     )
     
-    class(summary_obj) <- "summary.GEESAR"
+    class(summary_obj) <- "summary.GSCIMC"
     return(summary_obj)
   }
   
   # Si el objeto no pertenece a ninguna de las clases, lanzar error
   else {
-    stop("The object must be of class 'SARARgamlss' or 'GEESAR'.")
+    stop("The object must be of class 'SARARgamlss' or 'GSCIMC'.")
   }
 }
 
@@ -140,17 +140,17 @@ print.summary.SARARgamlss <- function(x, ...) {
   cat("=========================================================\n")
 }
 
-#' Print Method for Summary of GEESAR Models
+#' Print Method for Summary of GSCIMC Models
 #'
-#' This method prints a formatted summary of a 'summary.GEESAR' object,
+#' This method prints a formatted summary of a 'summary.GSCIMC' object,
 #' including details of the model coefficients, rho, dispersion, and other statistics.
 #'
-#' @param x An object of class 'summary.GEESAR'.
+#' @param x An object of class 'summary.GSCIMC'.
 #' @param ... Additional arguments (currently unused).
 #' @return Print a summary for the specified Generalized Spatial Autoregresive Model class.
 #' @export
-print.summary.GEESAR <- function(x, ...) {
-  cat("\nSummary of GEESAR Model\n")
+print.summary.GSCIMC <- function(x, ...) {
+  cat("\nSummary of GSCIMC Model\n")
   cat("=========================================================\n")
   cat("Family:", x$family, "\n")
   cat("Call:", deparse(x$call), "\n")

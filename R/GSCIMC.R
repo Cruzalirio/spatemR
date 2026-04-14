@@ -1,7 +1,7 @@
 #' Generalized Estimating Equations with Spatial Autoregressive Components
 #'
 #' @description
-#' `GEESAR` estimates generalized estimating equations (GEE) incorporating spatial autoregressive (SAR) components.  
+#' `GSCIMC` estimates generalized estimating equations (GEE) incorporating spatial autoregressive (SAR) components.  
 #' It extends GEE models to account for spatial dependence in the response variable.
 #'
 #' @param formula A formula specifying the model structure (response ~ predictors).
@@ -23,7 +23,7 @@
 #' The function supports common GLM families (`gaussian`, `binomial`, `poisson`, `Gamma`, `inverse.gaussian`) and 
 #' their quasi-likelihood equivalents.
 #'
-#' @return A list of class `"GEESAR"` containing:
+#' @return A list of class `"GSCIMC"` containing:
 #' \item{coefficients}{Estimated regression coefficients.}
 #' \item{rho}{Estimated spatial autoregressive parameter.}
 #' \item{fitted.values}{Predicted values from the model.}
@@ -56,13 +56,13 @@
 #' data(meuse)
 #' sp::coordinates(meuse) <- ~x+y
 #' W <- spdep::nb2mat(knn2nb(knearneigh(meuse, k=5)), style="W")
-#' fit <- GEESAR(cadmium ~ dist + elev, family=poisson(), data=meuse, W=W)
+#' fit <- GSCIMC(cadmium ~ dist + elev, family=poisson(), data=meuse, W=W)
 #' summary_SAR(fit)
 #'}
 #' @export
 #' @importFrom sphet spreg
 
-GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
+GSCIMC <- function (formula, family = gaussian(), weights=NULL, data, W,
                     start = NULL, 
                     toler = 1e-04, maxit = 200, trace = FALSE, eps=1e-6) {
   mf <- stats::model.frame(formula, data=data)
@@ -317,7 +317,7 @@ GEESAR <- function (formula, family = gaussian(), weights=NULL, data, W,
                levels = .getXlevels(attr(mf, "terms"), mf),
                contrasts = attr(X, "contrasts"), 
                start = start, iter = niterrho, linear = TRUE)
-  class(out_) <- "GEESAR"
+  class(out_) <- "GSCIMC"
   return(out_)
 }
 
