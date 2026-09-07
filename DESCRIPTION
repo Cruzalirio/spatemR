@@ -4,7 +4,7 @@ Title: Generalized Spatial Autoregresive Models for Mean and Variance
 Version: 1.4.0
 Authors@R: c(person("Nelson Alirio", "Cruz Gutierrez", 
                 role = c("aut", "cre","cph"), email = "nelson-alirio.cruz@uib.es"), 
-                person("Adrián", "Tobar Nicolau", 
+                person("Adrian", "Tobar Nicolau", 
                 role = c("aut"), email = "adrian.tobar@uib.es"), 
           person("Oscar Orlando", "Melo", role = "aut",
                 email="oomelom@unal.edu.co"),
