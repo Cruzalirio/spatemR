@@ -158,7 +158,7 @@ SARARgamlss <- function(formula, sigma.formula = ~1,
     spamu <- c(p0[1], NA)
     var_cov_matrix <- matrix(c( solve(Hessian[1,1]),NA, NA,NA), ncol=2, nrow=2)
     spacov = var_cov_matrix
-  } else {
+  } else { # SEM
     spamu <- c(NA, p0[2])
     var_cov_matrix <- matrix(c(NA, NA,NA, solve(Hessian[2,2])), ncol=2, nrow=2)
     spacov =var_cov_matrix 
